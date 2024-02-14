@@ -1,5 +1,5 @@
 # Use the existing Dockerfile as the base image
-FROM ubuntu:jammy
+FROM ubuntu:22.04
 
 # Set the locale
 RUN DEBIAN_FRONTEND=noninteractive apt-get clean && apt-get update
