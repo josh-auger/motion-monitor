@@ -11,6 +11,7 @@
 
 import re
 import os
+import sys
 import argparse
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
@@ -89,6 +90,12 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
     return total_volumes, volumes_above_threshold
 
 def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], log_filename="", titles=None, y_labels=None, rot_thresh=None, trans_thresh=None):
+    log_file_path, log_file_name = os.path.split(log_filename)
+
+    # Create an output folder if it doesn't exist
+    output_folder = os.path.join(log_file_path, f"{os.path.splitext(log_file_name)[0]}_outputs")
+    os.makedirs(output_folder, exist_ok=True)
+
     num_indices = len(indices_to_plot)
 
     # Check if all specified indices are valid
@@ -134,12 +141,11 @@ def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], log_f
     plt.tight_layout()
 
     # Save the plot with a .png extension
-    log_file_path, log_file_name = os.path.split(log_filename)
     base_name, _ = os.path.splitext(log_file_name)
-    plot_filename = os.path.join(log_file_path, f"{base_name}_parameters.png")
+    plot_filename = os.path.join(output_folder, f"{base_name}_parameters.png")
     counter = 1
     while os.path.exists(plot_filename):
-        plot_filename = os.path.join(log_file_path, f"{base_name}_parameters_{counter}.png")
+        plot_filename = os.path.join(output_folder, f"{base_name}_parameters_{counter}.png")
         counter += 1
     plt.savefig(plot_filename)
     print(f"\nParameters plot saved as: {plot_filename}")
@@ -149,6 +155,10 @@ def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], log_f
 
 def plot_displacements(displacements, log_filename, threshold=None, total_volumes=None, volumes_above_threshold=None):
     log_file_path, log_file_name = os.path.split(log_filename)
+
+    # Create an output folder if it doesn't exist
+    output_folder = os.path.join(log_file_path, f"{os.path.splitext(log_file_name)[0]}_outputs")
+    os.makedirs(output_folder, exist_ok=True)
 
     plt.figure(figsize=(10, 6))
     plt.plot(displacements, marker='o', linestyle='-', color='b', alpha=0.7, label='Displacements (mm)')
@@ -174,10 +184,10 @@ def plot_displacements(displacements, log_filename, threshold=None, total_volume
 
     # Save the plot with a .png extension
     base_name, _ = os.path.splitext(log_file_name)
-    plot_filename = os.path.join(log_file_path, f"{base_name}_displacements.png")
+    plot_filename = os.path.join(output_folder, f"{base_name}_displacements.png")
     counter = 1
     while os.path.exists(plot_filename):
-        plot_filename = os.path.join(log_file_path, f"{base_name}_displacements_{counter}.png")
+        plot_filename = os.path.join(output_folder, f"{base_name}_displacements_{counter}.png")
         counter += 1
     plt.savefig(plot_filename)
     print(f"Displacements plot saved as: {plot_filename}")
@@ -187,11 +197,14 @@ def plot_displacements(displacements, log_filename, threshold=None, total_volume
 
 
 if __name__ == "__main__":
-    # Parse command-line arguments
-    parser = argparse.ArgumentParser(description="Extract parameters from log file and plot specified indices.")
-    parser.add_argument("log_filename", type=str, help="Path to the log file")
-    args = parser.parse_args()
-    log_filename = args.log_filename
+    # # Parse command-line arguments
+    # parser = argparse.ArgumentParser(description="Extract parameters from log file and plot specified indices.")
+    # parser.add_argument("log_filename", type=str, help="Path to the log file")
+    # args = parser.parse_args()
+    # log_filename = args.log_filename
+
+    log_file = sys.argv[1]
+    log_filename = "/data/" + log_file
 
     # Extract multi-band (SMS) factor value
     sms_factor_line = find_lines_with_phrase(log_filename, "MultiBandFactor", "</value>")

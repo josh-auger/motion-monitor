@@ -9,7 +9,9 @@ def print_filepath():
         sys.exit(1)
 
     logfile_path = sys.argv[1]
-    print("Logfile path:", logfile_path)
+    print("Logfile name:", logfile_path)
+    logfile_path = sys.argv[2]
+    print("Logfile dir:", logfile_path)
 
 if __name__ == "__main__":
     hello_world()
