@@ -28,6 +28,3 @@ WORKDIR /data
 # Set the entry point for the container to run the Python script with command-line arguments
 ENTRYPOINT ["python3", "/app/extract_params_from_log.py"]
 #ENTRYPOINT ["python3", "/app/hello_world.py"]
-
-# Set the default command to an empty list
-CMD []

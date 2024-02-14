@@ -5,9 +5,7 @@
 # Other code dependencies:
 # pyhelpers/compute_displacement.py
 
-# Example run command:
-# python3 extract_params_from_log.py [filepath to log file, including filename]
-# python3 extract_params_from_log.py /home/jauger/GitHubRepos/sms-mi-reg/pyhelpers/test_data/slimm_logs_test/slimm_nar_2024-01-17_11.59.53.log
+# Requires log filename argument ($LOG_FILE) from docker run command (start_motion_monitor.sh)
 
 import re
 import os
@@ -148,7 +146,7 @@ def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], log_f
         plot_filename = os.path.join(output_folder, f"{base_name}_parameters_{counter}.png")
         counter += 1
     plt.savefig(plot_filename)
-    print(f"\nParameters plot saved as: {plot_filename}")
+    print(f"\n\nParameters plot saved as: {plot_filename}")
 
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
@@ -197,13 +195,9 @@ def plot_displacements(displacements, log_filename, threshold=None, total_volume
 
 
 if __name__ == "__main__":
-    # # Parse command-line arguments
-    # parser = argparse.ArgumentParser(description="Extract parameters from log file and plot specified indices.")
-    # parser.add_argument("log_filename", type=str, help="Path to the log file")
-    # args = parser.parse_args()
-    # log_filename = args.log_filename
-
+    # Get log filename from system input arguments
     log_file = sys.argv[1]
+    # Specify log file location within the container
     log_filename = "/data/" + log_file
 
     # Extract multi-band (SMS) factor value
@@ -247,18 +241,18 @@ if __name__ == "__main__":
     # print("Lines with specified phrase(s):")
     # for line in lines_with_phrases:
     #     print(line)
-    print("\nTotal number of lines found:", len(lines_with_params))
+    print("\nNum acquisition lines found:", len(lines_with_params))
     # print("\nExtracted parameters (first 5 sets):")
     # for numbers_set in extracted_numbers[:5]:
     #     print(numbers_set)
-    print("Number of extracted parameter sets:", len(extracted_numbers))
+    print("Num extracted parameter sets:", len(extracted_numbers))
     print("Skipped lines (missing end bracket, ']'):", skipped_lines_count)
     for skipped_line, error_message in skipped_lines:
         print(f"Line: {skipped_line}, Error: {error_message}")
     # print("\nDisplacements:")
     # for displacement_value in displacements[:5]:
     #     print(displacement_value)
-    print("\nNumber of displacement values:", len(displacements))
+    print("\nNum displacement values:", len(displacements))
     cumulative_disp = sum(displacements)
     print("Cumulative sum of displacement:", cumulative_disp)
 

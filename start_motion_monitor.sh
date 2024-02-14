@@ -1,10 +1,9 @@
 #!/bin/bash
 
-# Define the path to the log file
+# Specify local parent directory of log files
 LOG_DIR="/home/jauger/Radiology_Research/SLIMM_data/20240209_SLIMM_logs/"
 
-# Get the present working directory
-WORKING_DIR=$(pwd)
+# Get log filename from command line input argument
 LOG_FILE=$1
 
 # Build the Docker image, if it doesn't exist
