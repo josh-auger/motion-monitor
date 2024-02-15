@@ -7,7 +7,7 @@ LOG_DIR="/home/jauger/Radiology_Research/SLIMM_data/20240209_SLIMM_logs/"
 LOG_FILE=$1
 
 # Build the Docker image, if it doesn't exist
-docker build -t jauger/log-motion-monitor .
+#docker build -t jauger/log-motion-monitor .
 
 # Run the Docker container with the specified log file path and remove it after completion
 docker run --rm \
