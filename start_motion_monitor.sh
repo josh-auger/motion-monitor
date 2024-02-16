@@ -15,3 +15,6 @@ docker run --rm \
   jauger/log-motion-monitor:latest \
   $LOG_FILE
 
+
+# Example run command
+# sh start_motion_monitor.sh slimm_resting_2024-02-09_17.11.40.log
