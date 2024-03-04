@@ -90,6 +90,15 @@ def compute_motion_score(extracted_numbers, r=50):
         displacements.append(displacement_value)
     return displacements
 
+def calculate_percent_diff(array1, array2):
+    array1 = np.array(array1)
+    array2 = np.array(array2)
+    if len(array1) != len(array2):
+        raise ValueError("Arrays must have the same length.")
+
+    percent_diff = np.abs((array2 - array1) / ((array1 + array2) / 2)) * 100
+    return percent_diff
+
 def check_volume_motion(displacements, sms_factor, num_slices_per_volume, threshold):
     # Calculate the number of acquisitions per volume
     num_acquisitions_per_volume = int(num_slices_per_volume / sms_factor)
@@ -235,7 +244,8 @@ if __name__ == "__main__":
 
     # Compose transforms and calculate displacement between acquisitions
     displacements = compute_transform_pairs(extracted_numbers)
-    # displacements = compute_motion_score(extracted_numbers, r=50)
+    # displacements_updated = compute_motion_score(extracted_numbers, r=50)
+    # percent_diff = calculate_percent_diff(displacements_updated, displacements)
 
     # Establish thresholds for motion
     pixel_size = 2.4
@@ -281,3 +291,27 @@ if __name__ == "__main__":
     print("Completed volumes (+ ref vol):", total_volumes)
     print("Volumes with motion:", volumes_above_threshold)
     print("Volumes without motion:", (total_volumes - volumes_above_threshold))
+
+    # # Plotting percent_diff values
+    # print("Mean percent difference:", np.mean(percent_diff))
+    #
+    # log_file_path, log_file_name = os.path.split(log_filename)
+    # output_folder = os.path.join(log_file_path, f"{os.path.splitext(log_file_name)[0]}_outputs")
+    # os.makedirs(output_folder, exist_ok=True)
+    # plt.figure(figsize=(10, 6))
+    # plt.plot(percent_diff, marker='o')
+    # plt.xlabel('Acquisition (slice timing) group')
+    # plt.ylabel('Percent Difference')
+    # plt.title('Percent Difference between l1 norm and l2 norm')
+    # plt.grid(True)
+    # # Save the plot with a .png extension
+    # base_name, _ = os.path.splitext(log_file_name)
+    # plot_filename = os.path.join(output_folder, f"{base_name}_percent_difference.png")
+    # counter = 1
+    # while os.path.exists(plot_filename):
+    #     plot_filename = os.path.join(output_folder, f"{base_name}_percent_difference_{counter}.png")
+    #     counter += 1
+    # plt.savefig(plot_filename)
+    # print(f"Percent difference plot saved as: {plot_filename}")
+    # plt.ion()
+    # plt.show(block=True)
