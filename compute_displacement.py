@@ -89,7 +89,7 @@ def compute_displacement(transform1, transform2, outputfile=None):
     parms = np.asarray( euler3d.GetParameters() )
     print("\nComposed parameters (Euler3D) : ", parms)
 
-    # Original method: l1 norm
+    # # Original method: l1 norm
     # displacement = abs(parms[0]*radius) + abs(parms[1]*radius) + \
     #     abs(parms[2]*radius) + abs(parms[3]) + abs(parms[4]) + abs(parms[5])
 

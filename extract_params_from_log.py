@@ -13,6 +13,7 @@ import sys
 import argparse
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
+import numpy as np
 from compute_displacement import compute_displacement
 
 def find_lines_with_phrase(log_filename, line_search_phrase="FOR-REPORT", additional_search_phrase=None):
@@ -70,6 +71,22 @@ def compute_transform_pairs(extracted_numbers):
         transform_next = create_euler_transform(parameters_next)
 
         displacement_value = compute_displacement(transform_i, transform_next)
+        displacements.append(displacement_value)
+    return displacements
+
+def compute_motion_score(extracted_numbers, r=50):
+    num_instances = len(extracted_numbers)
+    displacements = []
+    for i in range(num_instances - 1):
+        param1 = np.array(extracted_numbers[i])
+        param2 = np.array(extracted_numbers[i + 1])
+        dp = param2 - param1
+        theta = np.abs(np.arccos(0.5 * (-1 + np.cos(dp[0])*np.cos(dp[1])
+            + np.cos(dp[0])*np.cos(dp[2]) + np.cos(dp[1])*np.cos(dp[2])
+            + np.sin(dp[0])*np.sin(dp[1])*np.sin(dp[2]))))
+        drot = r * np.sqrt((1-np.cos(theta))**2 + np.sin(theta)**2)
+        dtrans = np.linalg.norm(dp[3:])
+        displacement_value = drot + dtrans
         displacements.append(displacement_value)
     return displacements
 
@@ -218,6 +235,7 @@ if __name__ == "__main__":
 
     # Compose transforms and calculate displacement between acquisitions
     displacements = compute_transform_pairs(extracted_numbers)
+    # displacements = compute_motion_score(extracted_numbers, r=50)
 
     # Establish thresholds for motion
     pixel_size = 2.4
