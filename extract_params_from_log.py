@@ -294,6 +294,8 @@ if __name__ == "__main__":
 
     # # Plotting percent_diff values
     # print("Mean percent difference:", np.mean(percent_diff))
+    # print("Std-dev percent difference:", np.std(percent_diff))
+    # print("Range percent difference:", np.ptp(percent_diff))
     #
     # log_file_path, log_file_name = os.path.split(log_filename)
     # output_folder = os.path.join(log_file_path, f"{os.path.splitext(log_file_name)[0]}_outputs")
