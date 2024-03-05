@@ -56,10 +56,10 @@ def compute_displacement(transform1, transform2, outputfile=None):
     combined_translation = np.dot(A0, t1+c1-c0) + t0+c0-c1
     combined_affine = sitk.AffineTransform(combined_mat.flatten(), combined_translation, combined_center)
 
-    print('\nCombined affine transform : ')
-    print(combined_affine)
-    print(combined_affine.GetParameters())
-    print(combined_affine.GetFixedParameters())
+    # print('\nCombined affine transform : ')
+    # print(combined_affine)
+    # print(combined_affine.GetParameters())
+    # print(combined_affine.GetFixedParameters())
 
     # Save composed transform to outputfile
     if outputfile:
@@ -69,9 +69,9 @@ def compute_displacement(transform1, transform2, outputfile=None):
     versorrigid3d.SetCenter(combined_center)
     versorrigid3d.SetTranslation(combined_translation)
     versorrigid3d.SetMatrix(combined_mat.flatten())
-    print('\n')
-    print(versorrigid3d)
-    print(versorrigid3d.GetParameters())
+    # print('\n')
+    # print(versorrigid3d)
+    # print(versorrigid3d.GetParameters())
 
     # First three parameters are rotation angles in radians.
     # Second three parameters are translations.
@@ -80,14 +80,14 @@ def compute_displacement(transform1, transform2, outputfile=None):
     euler3d.SetCenter(combined_center)
     euler3d.SetTranslation(combined_translation)
     euler3d.SetMatrix(combined_mat.flatten())
-    print('\n')
-    print(euler3d)
-    print(euler3d.GetParameters())
+    # print('\n')
+    # print(euler3d)
+    # print(euler3d.GetParameters())
 
     # Compute the displacement:
     radius = 50
     parms = np.asarray( euler3d.GetParameters() )
-    print("\nComposed parameters (Euler3D) : ", parms)
+    # print("Composed parameters (Euler3D) : ", parms)
 
     # # Original method: l1 norm
     # displacement = abs(parms[0]*radius) + abs(parms[1]*radius) + \
@@ -97,7 +97,10 @@ def compute_displacement(transform1, transform2, outputfile=None):
     displacement = (radius * np.sqrt((parms[0]**2) + (parms[1]**2) + (parms[2]**2))) + \
                     np.sqrt((parms[3] ** 2) + (parms[4] ** 2) + (parms[5] ** 2))
 
-    print("\nDisplacement : ", displacement)
+    # Higher-order Taylor series expansions for estimating magnitude of rotation
+
+
+    # print("Displacement : ", displacement)
 
     return displacement
 
