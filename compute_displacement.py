@@ -87,7 +87,7 @@ def compute_displacement(transform1, transform2, outputfile=None):
     # Compute the displacement:
     radius = 50
     parms = np.asarray( euler3d.GetParameters() )
-    # print("Composed parameters (Euler3D) : ", parms)
+    print("Composed parameters (Euler3D) : ", parms)
 
     # # Original method: l1 norm
     # displacement = abs(parms[0]*radius) + abs(parms[1]*radius) + \
@@ -97,10 +97,8 @@ def compute_displacement(transform1, transform2, outputfile=None):
     displacement = (radius * np.sqrt((parms[0]**2) + (parms[1]**2) + (parms[2]**2))) + \
                     np.sqrt((parms[3] ** 2) + (parms[4] ** 2) + (parms[5] ** 2))
 
-    # Higher-order Taylor series expansions for estimating magnitude of rotation
 
-
-    # print("Displacement : ", displacement)
+    print("Displacement : ", displacement)
 
     return displacement
 
