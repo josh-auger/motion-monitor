@@ -89,15 +89,15 @@ def compute_displacement(transform1, transform2, outputfile=None):
     params = np.asarray( euler3d.GetParameters() )
     print("Composed parameters (Euler3D) : ", params)
 
-    # # Original method: l1 norm
+    # # Original method: l1 norm (over-estimates translations)
     # displacement = abs(params[0]*radius) + abs(params[1]*radius) + \
     #     abs(params[2]*radius) + abs(params[3]) + abs(params[4]) + abs(params[5])
 
-    # # Alternative method: arc length of magnitude of rotation + l2 norm of translations
+    # # Alternative method: l2 norm of magnitude of rotation and translations (over-estimates rotation contributions)
     # displacement = (radius * np.sqrt((params[0]**2) + (params[1]**2) + (params[2]**2))) + \
     #                 np.sqrt((params[3] ** 2) + (params[4] ** 2) + (params[5] ** 2))
 
-    # Tisdall et al. 2012 theoretical calculation
+    # Tisdall et al. 2012 exact equation
     theta = np.abs(np.arccos(0.5 * (-1 + np.cos(params[0]) * np.cos(params[1]) + \
                                     np.cos(params[0]) * np.cos(params[2]) + \
                                     np.cos(params[1]) * np.cos(params[2]) + \

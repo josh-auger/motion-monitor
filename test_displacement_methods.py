@@ -64,9 +64,9 @@ def compute_transform_pairs(extracted_numbers):
     num_instances = len(extracted_numbers)
     displacements = []
     for i in range(num_instances - 1):
-        # parameters_i = extracted_numbers[i]
+        # parameters_i = extracted_numbers[i] # to calculate between transform entries
         # parameters_next = extracted_numbers[i + 1]
-        parameters_i = [0, 0, 0, 0, 0, 0]
+        parameters_i = [0, 0, 0, 0, 0, 0] # to calculate all from 0 transform
         parameters_next = extracted_numbers[i]
         print('parameters_next : ', parameters_next)
 
@@ -81,9 +81,9 @@ def compute_motion_score(extracted_numbers, r=50):
     num_instances = len(extracted_numbers)
     displacements = []
     for i in range(num_instances - 1):
-        # param1 = np.array(extracted_numbers[i])
+        # param1 = np.array(extracted_numbers[i]) # to calculate between transform entries
         # param2 = np.array(extracted_numbers[i + 1])
-        param1 = np.array([0, 0, 0, 0, 0, 0])
+        param1 = np.array([0, 0, 0, 0, 0, 0]) # to calculate all from 0 transform
         param2 = np.array(extracted_numbers[i])
         dp = param2 - param1
         theta = np.abs(np.arccos(0.5 * (-1 + np.cos(dp[0])*np.cos(dp[1])
