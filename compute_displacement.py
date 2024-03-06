@@ -87,7 +87,7 @@ def compute_displacement(transform1, transform2, outputfile=None):
     # Compute the displacement:
     radius = 50
     params = np.asarray( euler3d.GetParameters() )
-    print("Composed parameters (Euler3D) : ", parms)
+    print("Composed parameters (Euler3D) : ", params)
 
     # # Original method: l1 norm
     # displacement = abs(params[0]*radius) + abs(params[1]*radius) + \
@@ -102,8 +102,8 @@ def compute_displacement(transform1, transform2, outputfile=None):
                                     np.cos(params[0]) * np.cos(params[2]) + \
                                     np.cos(params[1]) * np.cos(params[2]) + \
                                     np.sin(params[0]) * np.sin(params[1]) * np.sin(params[2]))))
-    drot = r * np.sqrt((1 - np.cos(theta)) ** 2 + np.sin(theta) ** 2)
-    dtrans = np.linalg.norm(dp[3:])
+    drot = radius * np.sqrt((1 - np.cos(theta)) ** 2 + np.sin(theta) ** 2)
+    dtrans = np.linalg.norm(params[3:])
     displacement = drot + dtrans
 
     print("Displacement : ", displacement)
