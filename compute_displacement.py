@@ -86,17 +86,25 @@ def compute_displacement(transform1, transform2, outputfile=None):
 
     # Compute the displacement:
     radius = 50
-    parms = np.asarray( euler3d.GetParameters() )
+    params = np.asarray( euler3d.GetParameters() )
     print("Composed parameters (Euler3D) : ", parms)
 
     # # Original method: l1 norm
-    # displacement = abs(parms[0]*radius) + abs(parms[1]*radius) + \
-    #     abs(parms[2]*radius) + abs(parms[3]) + abs(parms[4]) + abs(parms[5])
+    # displacement = abs(params[0]*radius) + abs(params[1]*radius) + \
+    #     abs(params[2]*radius) + abs(params[3]) + abs(params[4]) + abs(params[5])
 
-    # Alternative method: arc length of magnitude of rotation + l2 norm of translations
-    displacement = (radius * np.sqrt((parms[0]**2) + (parms[1]**2) + (parms[2]**2))) + \
-                    np.sqrt((parms[3] ** 2) + (parms[4] ** 2) + (parms[5] ** 2))
+    # # Alternative method: arc length of magnitude of rotation + l2 norm of translations
+    # displacement = (radius * np.sqrt((params[0]**2) + (params[1]**2) + (params[2]**2))) + \
+    #                 np.sqrt((params[3] ** 2) + (params[4] ** 2) + (params[5] ** 2))
 
+    # Tisdall et al. 2012 theoretical calculation
+    theta = np.abs(np.arccos(0.5 * (-1 + np.cos(params[0]) * np.cos(params[1]) + \
+                                    np.cos(params[0]) * np.cos(params[2]) + \
+                                    np.cos(params[1]) * np.cos(params[2]) + \
+                                    np.sin(params[0]) * np.sin(params[1]) * np.sin(params[2]))))
+    drot = r * np.sqrt((1 - np.cos(theta)) ** 2 + np.sin(theta) ** 2)
+    dtrans = np.linalg.norm(dp[3:])
+    displacement = drot + dtrans
 
     print("Displacement : ", displacement)
 
