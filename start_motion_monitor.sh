@@ -8,7 +8,7 @@
 # sh start_motion_monitor.sh slimm_resting_2024-02-09_17.11.40.log
 
 # Specify local parent directory of log files
-LOG_DIR="/home/jauger/Radiology_Research/SLIMM_data/20240209_SLIMM_logs/"
+LOG_DIR="/home/jauger/GitHubRepos/SLIMM/logs/"
 
 # Get log filename from command line input argument
 LOG_FILE=$1
