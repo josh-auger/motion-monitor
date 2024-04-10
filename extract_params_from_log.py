@@ -172,7 +172,7 @@ def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], log_f
         plot_filename = os.path.join(output_folder, f"{base_name}_parameters_{counter}.png")
         counter += 1
     plt.savefig(plot_filename)
-    print(f"\n\nParameters plot saved as: {plot_filename}")
+    print(f"\n\nParameters plot saved to: {plot_filename}")
 
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
@@ -214,10 +214,35 @@ def plot_displacements(displacements, log_filename, threshold=None, total_volume
         plot_filename = os.path.join(output_folder, f"{base_name}_displacements_{counter}.png")
         counter += 1
     plt.savefig(plot_filename)
-    print(f"Displacements plot saved as: {plot_filename}")
+    print(f"Displacements plot saved to: {plot_filename}")
 
     plt.ion()
     plt.show(block=True)
+
+
+def construct_data_table(extracted_numbers, displacements, volume_ID):
+    # combine transform parameters, slice displacements, and associated volume number into one numpy array table
+    data_table = np.stack((extracted_numbers, displacements, volume_ID), axis=-1)
+    data_table_headers = ['X_rotation(rad)','Y_rotation(rad)','Z_rotation(rad)','X_translation(mm)','Y_translation(mm)','Z_translation(mm)','Slice_displacement(mm)', 'Volume_number']
+
+    return data_table, data_table_headers
+
+
+def export_values_csv(data_table, data_table_headers, log_filename):
+    if len(headers) != data.shape[1]:
+        raise ValueError("Number of headers must match number of columns in data table!")
+
+    log_file_path, log_file_name = os.path.split(log_filename)
+    output_folder = os.path.join(log_file_path, f"{os.path.splitext(log_file_name)[0]}_outputs")
+    os.makedirs(output_folder, exist_ok=True)
+
+    base_name, _ = os.path.splitext(log_file_name)
+    csv_filename = os.path.join(output_folder, f"{base_name}_datatable.csv")
+
+    header_string = ','.join(data_table_headers)
+    np.savetxt(csv_filename, data_table, delimiter=",", header=header_string, comments='')
+    print(f"Data table saved to: {csv_filename}")
+
 
 
 if __name__ == "__main__":
@@ -244,7 +269,7 @@ if __name__ == "__main__":
 
     # Compose transforms and calculate displacement between acquisitions
     displacements = compute_transform_pairs(extracted_numbers)
-    # displacements_updated = compute_motion_score(extracted_numbers, r=50)
+    # displacements_updated = compute_motion_score(extracted_numbers, r=50)     # Yao's SLIMM method
     # percent_diff = calculate_percent_diff(displacements_updated, displacements)
 
     # Establish thresholds for motion
@@ -257,7 +282,7 @@ if __name__ == "__main__":
     # Plot the specified number in each set
     indices_to_plot = [0, 1, 2, 3, 4, 5] # remember base 0 indexing!
     titles = ['X-axis Rotation', 'Y-axis Rotation', 'Z-axis Rotation', 'X-axis Translation', 'Y-axis Translation', 'Z-axis Translation']
-    y_labels = ['X Rotation (rads)', 'Y Rotation (rads)', 'Z Rotation (rads)', 'X Translation (mm)', 'Y Translation (mm)', 'Z Translation (mm)']
+    y_labels = ['X Rotation (rad)', 'Y Rotation (rad)', 'Z Rotation (rad)', 'X Translation (mm)', 'Y Translation (mm)', 'Z Translation (mm)']
     rot_thresh = threshold_value / 50 # angle corresponding to arc length of 0.6 mm, radius = 50 mm
     trans_thresh = threshold_value # 25% of the pixel width
     plot_parameters(extracted_numbers, indices_to_plot, log_filename, titles, y_labels, rot_thresh, trans_thresh)
@@ -265,7 +290,10 @@ if __name__ == "__main__":
     # Plot displacements
     plot_displacements(displacements, log_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
-    # Print results
+
+
+    # ----------- PRINT RESULTS ----------
+    #
     # print("Lines with specified phrase(s):")
     # for line in lines_with_phrases:
     #     print(line)
