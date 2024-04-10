@@ -301,7 +301,7 @@ if __name__ == "__main__":
     indices_to_plot = [0, 1, 2, 3, 4, 5] # remember base 0 indexing!
     titles = ['X-axis Rotation', 'Y-axis Rotation', 'Z-axis Rotation', 'X-axis Translation', 'Y-axis Translation', 'Z-axis Translation']
     y_labels = ['X Rotation (rad)', 'Y Rotation (rad)', 'Z Rotation (rad)', 'X Translation (mm)', 'Y Translation (mm)', 'Z Translation (mm)']
-    rot_thresh = threshold_value / 50 # angle corresponding to arc length of 0.6 mm, radius = 50 mm
+    rot_thresh = threshold_value / 50 # angle corresponding to arc length of threshold value, where radius = 50 mm
     trans_thresh = threshold_value # 25% of the pixel width
     plot_parameters(extracted_numbers, indices_to_plot, log_filename, titles, y_labels, rot_thresh, trans_thresh)
 
