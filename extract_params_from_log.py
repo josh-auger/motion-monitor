@@ -255,22 +255,39 @@ if __name__ == "__main__":
     sms_factor_line = find_lines_with_phrase(log_filename, "MultiBandFactor", "</value>")
     sms_factor, *_ = extract_numbers_from_lines(sms_factor_line[:1],r'<value>(.*?)<\/value>')
     sms_factor = float(sms_factor[0][0]) # unpack nested list value storage (used for saving transform parameters)
+    print("\nSMS factor = ", sms_factor)
 
     # Extract number of slices per volume
     num_vol_slices_line = find_lines_with_phrase(log_filename,"Number of slices per volume:")
     num_vol_slices, *_ = extract_numbers_from_lines(num_vol_slices_line,r'(\d+)\.$')
     num_vol_slices = float(num_vol_slices[0][0])
+    print("Num slices per volume:", num_vol_slices)
+    print("Num acquisitions per volume:", int(num_vol_slices / sms_factor))
 
     # Find all lines reporting transform parameters
     lines_with_params = find_lines_with_phrase(log_filename, line_search_phrase = "FOR-REPORT", additional_search_phrase = "Kalman filtering")
+    print("\nNum acquisition lines found:", len(lines_with_params))
 
     # Extract numbers from the lines and count skipped lines
     extracted_numbers, skipped_lines, skipped_lines_count = extract_numbers_from_lines(lines_with_params, number_search_pattern = r'\[(.*?)\]')
+    # print("\nExtracted parameters (first 5 sets):")
+    # for numbers_set in extracted_numbers[:5]:
+    #     print(numbers_set)
+    print("Num extracted parameter sets:", len(extracted_numbers))
+    print("Skipped lines (missing end bracket, ']'):", skipped_lines_count)
+    for skipped_line, error_message in skipped_lines:
+        print(f"Line: {skipped_line}, Error: {error_message}")
 
     # Compose transforms and calculate displacement between acquisitions
     displacements = compute_transform_pairs(extracted_numbers)
     # displacements_updated = compute_motion_score(extracted_numbers, r=50)     # Yao's SLIMM method
     # percent_diff = calculate_percent_diff(displacements_updated, displacements)
+    # print("\nDisplacements:")
+    # for displacement_value in displacements[:5]:
+    #     print(displacement_value)
+    print("\nNum displacement values:", len(displacements))
+    cumulative_disp = sum(displacements)
+    print("Cumulative sum of displacement:", cumulative_disp)
 
     # Establish thresholds for motion
     pixel_size = 2.4
@@ -278,6 +295,9 @@ if __name__ == "__main__":
 
     # Check each volume for motion
     total_volumes, volumes_above_threshold = check_volume_motion(displacements, sms_factor, num_vol_slices, threshold_value)
+    print("Completed volumes (+ ref vol):", total_volumes)
+    print("Volumes with motion:", volumes_above_threshold)
+    print("Volumes without motion:", (total_volumes - volumes_above_threshold))
 
     # Plot the specified number in each set
     indices_to_plot = [0, 1, 2, 3, 4, 5] # remember base 0 indexing!
@@ -290,36 +310,10 @@ if __name__ == "__main__":
     # Plot displacements
     plot_displacements(displacements, log_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
+    # Export data table as CSV file
 
 
-    # ----------- PRINT RESULTS ----------
-    #
-    # print("Lines with specified phrase(s):")
-    # for line in lines_with_phrases:
-    #     print(line)
-    print("\nNum acquisition lines found:", len(lines_with_params))
-    # print("\nExtracted parameters (first 5 sets):")
-    # for numbers_set in extracted_numbers[:5]:
-    #     print(numbers_set)
-    print("Num extracted parameter sets:", len(extracted_numbers))
-    print("Skipped lines (missing end bracket, ']'):", skipped_lines_count)
-    for skipped_line, error_message in skipped_lines:
-        print(f"Line: {skipped_line}, Error: {error_message}")
-    # print("\nDisplacements:")
-    # for displacement_value in displacements[:5]:
-    #     print(displacement_value)
-    print("\nNum displacement values:", len(displacements))
-    cumulative_disp = sum(displacements)
-    print("Cumulative sum of displacement:", cumulative_disp)
-
-
-    print("\nSMS factor = ", sms_factor)
-    print("Num slices per volume:", num_vol_slices)
-    print("Num acquisitions per volume:", int(num_vol_slices/sms_factor))
-    print("Completed volumes (+ ref vol):", total_volumes)
-    print("Volumes with motion:", volumes_above_threshold)
-    print("Volumes without motion:", (total_volumes - volumes_above_threshold))
-
+    # --------- PRINT RESULTS ----------
     # # Plotting percent_diff values
     # print("Mean percent difference:", np.mean(percent_diff))
     # print("Std-dev percent difference:", np.std(percent_diff))
