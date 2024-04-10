@@ -51,7 +51,6 @@ def extract_numbers_from_lines(lines, number_search_pattern=r'\[(.*?)\]'):
         else:
             skipped_lines_count += 1
             skipped_lines.append((line, "No match found"))
-
     return extracted_numbers, skipped_lines, skipped_lines_count
 
 def create_euler_transform(parameters, rotation_center=[0.0, 0.0, 0.0]):
@@ -72,6 +71,7 @@ def compute_transform_pairs(extracted_numbers):
 
         displacement_value = compute_displacement(transform_i, transform_next)
         displacements.append(displacement_value)
+    displacements.append(0) # final acquisition does not have next transform to compute displacement (yet)
     return displacements
 
 def compute_motion_score(extracted_numbers, r=50):
@@ -88,6 +88,7 @@ def compute_motion_score(extracted_numbers, r=50):
         dtrans = np.linalg.norm(dp[3:])
         displacement_value = drot + dtrans
         displacements.append(displacement_value)
+    displacements.append(0) # final acquisition does not have next transform to compute displacement (yet)
     return displacements
 
 def calculate_percent_diff(array1, array2):
@@ -100,40 +101,38 @@ def calculate_percent_diff(array1, array2):
     return percent_diff
 
 def check_volume_motion(displacements, sms_factor, num_slices_per_volume, threshold):
-    # Calculate the number of acquisitions per volume
+    # Calculate number of acquisitions per volume
     num_acquisitions_per_volume = int(num_slices_per_volume / sms_factor)
     total_volumes = (len(displacements) / num_acquisitions_per_volume) + 1 # plus 1 for the initial reference volume
     volumes_above_threshold = 0
+    volume_id = []
 
-    # Iterate over the displacement values
     for i in range(0, len(displacements), num_acquisitions_per_volume):
+        volume_count = i // num_acquisitions_per_volume + 1
         volume_displacements = displacements[i:i + num_acquisitions_per_volume]
+        volume_id.extend([volume_count] * len(volume_displacements))
         if any(d > threshold for d in volume_displacements):
             volumes_above_threshold += 1
 
-    return total_volumes, volumes_above_threshold
+    return total_volumes, volumes_above_threshold, volume_id
 
 def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], log_filename="", titles=None, y_labels=None, rot_thresh=None, trans_thresh=None):
-    log_file_path, log_file_name = os.path.split(log_filename)
-
-    # Create an output folder if it doesn't exist
-    output_folder = os.path.join(log_file_path, f"{os.path.splitext(log_file_name)[0]}_outputs")
-    os.makedirs(output_folder, exist_ok=True)
-
-    num_indices = len(indices_to_plot)
-
-    # Check if all specified indices are valid
     valid_indices = all(0 <= index < len(extracted_numbers[0]) for index in indices_to_plot)
     if not valid_indices:
         print("Error: One (or more) indices are out of range.")
         return
 
+    # Create an output folder if it doesn't exist
+    log_file_path, log_file_name = os.path.split(log_filename)
+    output_folder = os.path.join(log_file_path, f"{os.path.splitext(log_file_name)[0]}_outputs")
+    os.makedirs(output_folder, exist_ok=True)
+
+    num_indices = len(indices_to_plot)
     fig, axes = plt.subplots(num_indices, 1, figsize=(8, 4 * num_indices))
     subplot_colors = ['b', 'g', 'r', 'c', 'm', 'y']  # Default colors for subsequent plots
 
     for i, index in enumerate(indices_to_plot):
         numbers_to_plot = [numbers[index] for numbers in extracted_numbers]
-
         if num_indices > 1:
             ax = axes[i]
         else:
@@ -161,10 +160,8 @@ def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], log_f
             ax.axhline(y=trans_thresh, color='r', linestyle='--', alpha=0.7,
                        label=f'Translation Threshold ({trans_thresh})')
             ax.axhline(y=-trans_thresh, color='r', linestyle='--', alpha=0.7)
-
     plt.tight_layout()
 
-    # Save the plot with a .png extension
     base_name, _ = os.path.splitext(log_file_name)
     plot_filename = os.path.join(output_folder, f"{base_name}_parameters.png")
     counter = 1
@@ -173,14 +170,12 @@ def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], log_f
         counter += 1
     plt.savefig(plot_filename)
     print(f"\n\nParameters plot saved to: {plot_filename}")
-
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
 
 def plot_displacements(displacements, log_filename, threshold=None, total_volumes=None, volumes_above_threshold=None):
-    log_file_path, log_file_name = os.path.split(log_filename)
-
     # Create an output folder if it doesn't exist
+    log_file_path, log_file_name = os.path.split(log_filename)
     output_folder = os.path.join(log_file_path, f"{os.path.splitext(log_file_name)[0]}_outputs")
     os.makedirs(output_folder, exist_ok=True)
 
@@ -205,8 +200,6 @@ def plot_displacements(displacements, log_filename, threshold=None, total_volume
     plt.text(0.5, 0.9, text, ha='center', va='center', transform=plt.gca().transAxes,
              bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.5', alpha=0.7))
 
-
-    # Save the plot with a .png extension
     base_name, _ = os.path.splitext(log_file_name)
     plot_filename = os.path.join(output_folder, f"{base_name}_displacements.png")
     counter = 1
@@ -215,16 +208,18 @@ def plot_displacements(displacements, log_filename, threshold=None, total_volume
         counter += 1
     plt.savefig(plot_filename)
     print(f"Displacements plot saved to: {plot_filename}")
-
     plt.ion()
     plt.show(block=True)
 
 
 def construct_data_table(extracted_numbers, displacements, volume_ID):
+    if len(extracted_numbers) != len(displacements) or len(displacements) != len(volume_ID) or len(
+            extracted_numbers) != len(volume_ID):
+        raise ValueError("Length of input arrays must be the same for concatenation.")
+
     # combine transform parameters, slice displacements, and associated volume number into one numpy array table
     data_table = np.stack((extracted_numbers, displacements, volume_ID), axis=-1)
     data_table_headers = ['X_rotation(rad)','Y_rotation(rad)','Z_rotation(rad)','X_translation(mm)','Y_translation(mm)','Z_translation(mm)','Slice_displacement(mm)', 'Volume_number']
-
     return data_table, data_table_headers
 
 
@@ -294,7 +289,7 @@ if __name__ == "__main__":
     threshold_value = 0.75 # pixel_size*0.25  # threshold for acceptable motion allowed
 
     # Check each volume for motion
-    total_volumes, volumes_above_threshold = check_volume_motion(displacements, sms_factor, num_vol_slices, threshold_value)
+    total_volumes, volumes_above_threshold, volume_id = check_volume_motion(displacements, sms_factor, num_vol_slices, threshold_value)
     print("Completed volumes (+ ref vol):", total_volumes)
     print("Volumes with motion:", volumes_above_threshold)
     print("Volumes without motion:", (total_volumes - volumes_above_threshold))
@@ -311,7 +306,8 @@ if __name__ == "__main__":
     plot_displacements(displacements, log_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
     # Export data table as CSV file
-
+    data_table, data_table_headers = construct_data_table(extracted_numbers, displacements, volume_id)
+    export_values_csv(data_table, data_table_headers, log_filename)
 
     # --------- PRINT RESULTS ----------
     # # Plotting percent_diff values
