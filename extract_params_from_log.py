@@ -213,12 +213,15 @@ def plot_displacements(displacements, log_filename, threshold=None, total_volume
 
 
 def construct_data_table(extracted_numbers, displacements, volume_ID):
-    if len(extracted_numbers) != len(displacements) or len(displacements) != len(volume_ID) or len(
-            extracted_numbers) != len(volume_ID):
+    # print("Shapes of arrays:")
+    # print("extracted_numbers:", extracted_numbers.shape)
+    # print("displacements:", displacements.shape)
+    # print("volume_ID:", volume_ID.shape)
+    if len(extracted_numbers) != len(displacements) or len(displacements) != len(volume_ID) or len(extracted_numbers) != len(volume_ID):
         raise ValueError("Length of input arrays must be the same for concatenation.")
 
     # combine transform parameters, slice displacements, and associated volume number into one numpy array table
-    data_table = np.stack((extracted_numbers, displacements, volume_ID), axis=-1)
+    data_table = np.concatenate((extracted_numbers[..., np.newaxis], displacements[..., np.newaxis], volume_ID[..., np.newaxis]), axis=-1)
     data_table_headers = ['X_rotation(rad)','Y_rotation(rad)','Z_rotation(rad)','X_translation(mm)','Y_translation(mm)','Z_translation(mm)','Slice_displacement(mm)', 'Volume_number']
     return data_table, data_table_headers
 
@@ -306,7 +309,7 @@ if __name__ == "__main__":
     plot_displacements(displacements, log_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
     # Export data table as CSV file
-    data_table, data_table_headers = construct_data_table(extracted_numbers, displacements, volume_id)
+    data_table, data_table_headers = construct_data_table(np.array(extracted_numbers), np.array(displacements), np.array(volume_id))
     export_values_csv(data_table, data_table_headers, log_filename)
 
     # --------- PRINT RESULTS ----------
