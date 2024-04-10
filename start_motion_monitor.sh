@@ -10,7 +10,7 @@
 # Specify local parent directory of log files
 LOG_DIR="/home/jauger/GitHubRepos/SLIMM/logs/"
 
-# Get log filename from command line input argument
+# Grab command line input arguments
 LOG_FILE=$1
 
 # Build the Docker image, if it does not yet exist
