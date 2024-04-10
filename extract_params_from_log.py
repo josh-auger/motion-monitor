@@ -193,7 +193,7 @@ def plot_displacements(displacements, log_filename, threshold=None, total_volume
 
     # Display number of acquisitions and cumulative displacement
     cumulative_sum = sum(displacements)
-    total_sets = len(displacements) + 1  # Total number of sets (including first acquisition group)
+    total_sets = len(displacements)
     text = f'Number of Acquisitions: {total_sets}\nCumulative Displacement (mm): {cumulative_sum:.3f}'
     if total_volumes is not None and volumes_above_threshold is not None:
         text += f'\nTotal Collected Volumes: {total_volumes:.3f}\nVolumes with Motion: {volumes_above_threshold:.3f}\nVolumes without Motion: {(total_volumes - volumes_above_threshold):.3f}'
