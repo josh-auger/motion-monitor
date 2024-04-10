@@ -5,10 +5,10 @@
 # Run command needs to include the specific log filename to monitor.
 #
 # Example run command
-# sh start_motion_monitor.sh slimm_resting_2024-02-09_17.11.40.log
+# sh start_motion_monitor.sh slimm_2024-04-02_09.21.28.log
 
 # Specify local parent directory of log files
-LOG_DIR="/home/jauger/GitHubRepos/SLIMM/logs/"
+LOG_DIR="/home/jauger/Radiology_Research/SLIMM_data/20240321_restingstate_480vols/slimm_offline_logs/"
 
 # Grab command line input arguments
 LOG_FILE=$1
