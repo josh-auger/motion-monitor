@@ -221,13 +221,13 @@ def construct_data_table(extracted_numbers, displacements, volume_ID):
         raise ValueError("Length of input arrays must be the same for concatenation.")
 
     # combine transform parameters, slice displacements, and associated volume number into one numpy array table
-    data_table = np.concatenate((extracted_numbers[..., np.newaxis], displacements[..., np.newaxis], volume_ID[..., np.newaxis]), axis=-1)
+    data_table = np.hstack((extracted_numbers, displacements[..., np.newaxis], volume_ID[..., np.newaxis]))
     data_table_headers = ['X_rotation(rad)','Y_rotation(rad)','Z_rotation(rad)','X_translation(mm)','Y_translation(mm)','Z_translation(mm)','Slice_displacement(mm)', 'Volume_number']
     return data_table, data_table_headers
 
 
 def export_values_csv(data_table, data_table_headers, log_filename):
-    if len(headers) != data.shape[1]:
+    if len(data_table_headers) != data_table.shape[1]:
         raise ValueError("Number of headers must match number of columns in data table!")
 
     log_file_path, log_file_name = os.path.split(log_filename)
