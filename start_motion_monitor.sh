@@ -8,7 +8,7 @@
 # sh start_motion_monitor.sh slimm_2024-04-02_09.21.28.log
 
 # Specify local parent directory of log files
-LOG_DIR="/home/jauger/Radiology_Research/SLIMM_data/20231207_pre-hemi_4748062_SLIMM_logs/"
+LOG_DIR="/home/jauger/Radiology_Research/SLIMM_data/20231013_post-hemi_4203836_SLIMM_logs/"
 
 # Grab command line input arguments
 LOG_FILE=$1
