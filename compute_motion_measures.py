@@ -30,18 +30,21 @@ def create_euler_transform(parameters, rotation_center=[0.0, 0.0, 0.0]):
 def compute_transform_pair_displacement(extracted_numbers, radius):
     num_instances = len(extracted_numbers)
     displacements = []
-    for i in range(num_instances - 1):
+    for i in range(num_instances):
+        if i == 0:
+            parameters_previous = extracted_numbers[i]
+        else:
+            parameters_previous = extracted_numbers[i - 1]
+
         parameters_i = extracted_numbers[i]
-        parameters_next = extracted_numbers[i + 1]
 
+        transform_previous = create_euler_transform(parameters_previous)
         transform_i = create_euler_transform(parameters_i)
-        transform_next = create_euler_transform(parameters_next)
 
-        displacement_value = compute_displacement(transform_i, transform_next, radius)
+        displacement_value = compute_displacement(transform_previous, transform_i, radius)
         displacements.append(displacement_value)
-    displacements.append(0) # final acquisition does not have next transform to compute displacement (yet)
 
-    print("\nNum displacement values:", len(displacements))
+    print("\nNumber of displacement values:", len(displacements))
     return displacements
 
 def compute_displacement(transform1, transform2, radius=50, outputfile=None):
@@ -85,7 +88,7 @@ def compute_displacement(transform1, transform2, radius=50, outputfile=None):
     dtrans = np.linalg.norm(params[3:])
     displacement = drot + dtrans
 
-    print("\tDisplacement : ", displacement)
+    # print("\tDisplacement : ", displacement)
 
     return displacement
 
@@ -112,7 +115,7 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
         if any(d > threshold for d in volume_displacements):
             volumes_above_threshold += 1
 
-    print("Completed volumes (+ reference):", total_volumes)
+    print("Total collected volumes (+ reference):", total_volumes)
     print("Volumes with motion:", volumes_above_threshold)
     print("Volumes without motion:", (total_volumes - volumes_above_threshold))
     return total_volumes, volumes_above_threshold, volume_id
@@ -177,7 +180,7 @@ def plot_parameters(extracted_numbers, input_filepath="", titles=None, y_labels=
 
     plot_filename = create_output_file(input_filepath, "parameters","png")
     plt.savefig(plot_filename)
-    print(f"\n\nParameters plot saved to: {plot_filename}")
+    print(f"\nParameters plot saved as: {plot_filename}")
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
 
@@ -215,12 +218,12 @@ def plot_parameter_distributions(transform_list, input_filepath="", offset=0.008
 
     plt.legend()
     plt.xlabel('mm/degrees')
-    plt.ylabel('Normalized histogram')
+    plt.ylabel('Normalized frequency')
     plt.title('Distribution of motion parameters : ' + input_filepath)
 
     plot_filename = create_output_file(input_filepath, "parameters_distribution","png")
     plt.savefig(plot_filename)
-    print(f"\n\nParameters distribution plot saved to: {plot_filename}")
+    print(f"Parameters distribution plot saved as: {plot_filename}")
 
     plt.ion()
     plt.show(block=False)
@@ -249,7 +252,7 @@ def plot_displacements(displacements, input_filepath, threshold=None, total_volu
 
     plot_filename = create_output_file(input_filepath, "displacements","png")
     plt.savefig(plot_filename)
-    print(f"Displacements plot saved to: {plot_filename}")
+    print(f"Displacements plot saved as: {plot_filename}")
     plt.ion()
     plt.show(block=True)
 
@@ -276,7 +279,7 @@ def export_values_csv(data_table, data_table_headers, input_filepath):
 
     header_string = ','.join(data_table_headers)
     np.savetxt(csv_filename, data_table, delimiter=",", header=header_string, comments='')
-    print(f"Data table saved to: {csv_filename}")
+    print(f"Data table saved as: {csv_filename}")
 
 
 
@@ -300,12 +303,12 @@ if __name__ == "__main__":
 
     # Calculate displacement between acquisitions
     radius = 50     # head radius assumption (mm)
-    print(f"\tHead radius (mm) : {radius}")
+    print(f"\nHead radius (mm) : {radius}")
     displacements = compute_transform_pair_displacement(transform_list, radius)
 
     # Calculate cumulative displacement
     cumulative_disp = sum(displacements)
-    print("Cumulative sum of displacement:", cumulative_disp)
+    print(f"Cumulative sum of displacement: {cumulative_disp} mm")
 
     # Calculate motion per minute estimate
 
