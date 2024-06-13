@@ -27,7 +27,7 @@ def create_euler_transform(parameters, rotation_center=[0.0, 0.0, 0.0]):
     euler_transform.SetCenter(rotation_center)
     return euler_transform
 
-def compute_transform_pair_displacement(extracted_numbers):
+def compute_transform_pair_displacement(extracted_numbers, radius):
     num_instances = len(extracted_numbers)
     displacements = []
     for i in range(num_instances - 1):
@@ -37,12 +37,57 @@ def compute_transform_pair_displacement(extracted_numbers):
         transform_i = create_euler_transform(parameters_i)
         transform_next = create_euler_transform(parameters_next)
 
-        displacement_value = compute_displacement(transform_i, transform_next)
+        displacement_value = compute_displacement(transform_i, transform_next, radius)
         displacements.append(displacement_value)
     displacements.append(0) # final acquisition does not have next transform to compute displacement (yet)
 
     print("\nNum displacement values:", len(displacements))
     return displacements
+
+def compute_displacement(transform1, transform2, radius=50, outputfile=None):
+    A0 = np.asarray(transform2.GetMatrix()).reshape(3, 3)
+    c0 = np.asarray(transform2.GetCenter())
+    t0 = np.asarray(transform2.GetTranslation())
+
+    A1 = np.asarray(transform1.GetInverse().GetMatrix()).reshape(3, 3)
+    c1 = np.asarray(transform1.GetInverse().GetCenter())
+    t1 = np.asarray(transform1.GetInverse().GetTranslation())
+
+    combined_mat = np.dot(A0,A1)
+    combined_center = c1
+    combined_translation = np.dot(A0, t1+c1-c0) + t0+c0-c1
+    combined_affine = sitk.AffineTransform(combined_mat.flatten(), combined_translation, combined_center)
+
+    # Save composed transform to outputfile
+    if outputfile:
+        sitk.WriteTransform(combined_affine, outputfile)
+
+    versorrigid3d = sitk.VersorRigid3DTransform()
+    versorrigid3d.SetCenter(combined_center)
+    versorrigid3d.SetTranslation(combined_translation)
+    versorrigid3d.SetMatrix(combined_mat.flatten())
+
+    euler3d = sitk.Euler3DTransform()
+    euler3d.SetCenter(combined_center)
+    euler3d.SetTranslation(combined_translation)
+    euler3d.SetMatrix(combined_mat.flatten())
+
+    # Compute displacement (Tisdall et al. 2012)
+    print(f"Head radius (mm) : {radius}")
+    params = np.asarray( euler3d.GetParameters() )
+    print("Composed parameters (Euler3D) : ", params)
+
+    theta = np.abs(np.arccos(0.5 * (-1 + np.cos(params[0]) * np.cos(params[1]) + \
+                                    np.cos(params[0]) * np.cos(params[2]) + \
+                                    np.cos(params[1]) * np.cos(params[2]) + \
+                                    np.sin(params[0]) * np.sin(params[1]) * np.sin(params[2]))))
+    drot = radius * np.sqrt((1 - np.cos(theta)) ** 2 + np.sin(theta) ** 2)
+    dtrans = np.linalg.norm(params[3:])
+    displacement = drot + dtrans
+
+    print("Displacement : ", displacement)
+
+    return displacement
 
 def calculate_percent_diff(array1, array2):
     array1 = np.array(array1)
@@ -254,7 +299,8 @@ if __name__ == "__main__":
 
 
     # Calculate displacement between acquisitions
-    displacements = compute_transform_pair_displacement(transform_list)
+    radius = 50     # head radius assumption (mm)
+    displacements = compute_transform_pair_displacement(transform_list, radius)
 
     # Calculate cumulative displacement
     cumulative_disp = sum(displacements)
@@ -265,8 +311,8 @@ if __name__ == "__main__":
     # Calculate tSNR?
 
     # Check displacements of each volume against motion threshold
-    pixel_size = 2.4
-    threshold_value = 0.75 # pixel_size*0.25  # threshold for acceptable motion (in mm)
+    pixel_size = 2.4    # in mm
+    threshold_value = 0.75 # pixel_size*0.25  # threshold for acceptable motion (mm)
     total_volumes, volumes_above_threshold, volume_id = check_volume_motion(displacements, sms_factor, nslices_per_vol, threshold_value)
 
     # Plot transform parameters
