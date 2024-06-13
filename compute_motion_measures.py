@@ -230,20 +230,19 @@ def plot_parameter_distributions(transform_list, input_filepath="", offset=0.008
     plt.show(block=False)
 
 def plot_displacements(displacements, input_filepath, threshold=None, total_volumes=None, volumes_above_threshold=None):
-    fig, axs = plt.subplots(1, 2, figsize=(15, 6))
-    gs = GridSpec(1, 2, width_ratios=[3, 1])  # Make the right subplot narrower
+    fig, axs = plt.subplots(1, 2, figsize=(15, 6), gridspec_kw={'width_ratios': [3, 1]})
 
     # Left subplot: displacement values per acquisition group
-    ax0 = fig.add_subplot(gs[0])
-    ax0.plot(displacements, marker='o', linestyle='-', color='b', alpha=0.7, label='Displacements (mm)')
-    ax0.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
+    axs[0].plot(displacements, marker='o', linestyle='-', color='b', alpha=0.7, label='Displacements (mm)')
+    axs[0].grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
     if threshold is not None:
-        ax0.axhline(y=threshold, color='r', linestyle='--', linewidth=3, alpha=1.0, label=f'Threshold = {threshold} mm')
+        axs[0].axhline(y=threshold, color='r', linestyle='--', linewidth=3, alpha=1.0,
+                       label=f'Threshold = {threshold} mm')
 
-    ax0.set_title('Displacement Tracking : ' + input_filepath)
-    ax0.set_xlabel('Acquisition (slice timing) group')
-    ax0.set_ylabel('Displacement (mm)')
-    ax0.legend(loc='upper left')
+    axs[0].set_title('Displacement Tracking : ' + input_filepath)
+    axs[0].set_xlabel('Acquisition (slice timing) group')
+    axs[0].set_ylabel('Displacement (mm)')
+    axs[0].legend(loc='upper left')
 
     # Display number of acquisitions and cumulative displacement on the left plot
     cumulative_sum = sum(displacements)
@@ -251,25 +250,25 @@ def plot_displacements(displacements, input_filepath, threshold=None, total_volu
     text = f'Number of Acquisitions: {total_sets}\nCumulative Displacement (mm): {cumulative_sum:.3f}'
     if total_volumes is not None and volumes_above_threshold is not None:
         text += f'\nTotal Collected Volumes: {total_volumes:.3f}\nVolumes with Motion: {volumes_above_threshold:.3f}\nVolumes without Motion: {(total_volumes - volumes_above_threshold):.3f}'
-    ax0.text(0.5, 0.9, text, ha='center', va='center', transform=ax0.transAxes,
-             bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.5', alpha=0.7))
+    axs[0].text(0.5, 0.9, text, ha='center', va='center', transform=axs[0].transAxes,
+                bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.5', alpha=0.7))
 
     # Right subplot: boxplot of all displacement values
-    ax1 = fig.add_subplot(gs[1])
-    ax1.boxplot(displacements, vert=True, patch_artist=True,
-                boxprops=dict(facecolor='skyblue', color='black', alpha=1.0),
-                whiskerprops=dict(color='black'), capprops=dict(color='black'), medianprops=dict(color='black'))
-    # x_scatter = np.random.normal(1, 0.04, size=len(displacements))  # Jittered x positions
-    # ax1.scatter(x_scatter, displacements, color='black', alpha=0.05)
+    axs[1].boxplot(displacements, vert=True, patch_artist=True,
+                   boxprops=dict(facecolor='skyblue', color='black', alpha=1.0),
+                   whiskerprops=dict(color='black'), capprops=dict(color='black'), medianprops=dict(color='black'))
 
-    ax1.set_title('Displacement distribution')
-    ax1.set_ylabel('Displacement (mm)')
-    ax1.set_xticks([1])
-    ax1.set_xticklabels([''])
+    axs[1].set_title('Displacement distribution')
+    axs[1].set_ylabel('Displacement (mm)')
+    axs[1].set_xticks([1])
+    axs[1].set_xticklabels([''])
+
+    # Adjust the width of the right subplot
+    plt.subplots_adjust(wspace=0.4)  # Increase or decrease the value to adjust the space between subplots
 
     plt.tight_layout()
 
-    plot_filename = create_output_file(input_filepath, "displacements","png")
+    plot_filename = create_output_file(input_filepath, "displacements", "png")
     plt.savefig(plot_filename)
     print(f"Displacements plot saved as: {plot_filename}")
     plt.ion()
