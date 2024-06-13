@@ -18,7 +18,7 @@ import SimpleITK as sitk
 import numpy as np
 from compute_displacement import compute_displacement
 from extract_params_from_log import get_data_from_slimm_log
-# from extract_params_from_transform_files import compile_transforms
+from extract_params_from_transform_files import get_data_from_transforms
 
 
 def create_euler_transform(parameters, rotation_center=[0.0, 0.0, 0.0]):
@@ -239,11 +239,19 @@ if __name__ == "__main__":
     input_filename = sys.argv[1]
     input_filepath = "/data/" + input_filename
 
-    # IF input_file = .log file, THEN extract transform parameters from log file
-    transform_list, sms_factor, nslices_per_vol = get_data_from_slimm_log(input_filepath)
+    if os.path.isfile(input_filepath):
+        if input_filepath.endswith(".log"):
+            print("Processing log file...")
+            transform_list, sms_factor, nslices_per_vol = get_data_from_slimm_log(input_filepath)
+        elif input_filepath.endswith(".txt") or input_filepath.endswith(".tfm"):
+            print("Processing directory of transform files...")
+            directory_path = os.path.dirname(input_filepath)
+            transform_list = get_data_from_transforms(directory_path)
+        else:
+            raise ValueError("Unsupported file extension. Please provide a .log, .txt, or .tfm file.")
+    else:
+        raise ValueError("The input path is not a valid file.")
 
-    # IF input_file = .tfm or .txt file, THEN extract transform parameters from transform file(s)
-    # return list of arrays of all transform parameters as "transform_list"
 
     # Calculate displacement between acquisitions
     displacements = compute_transform_pair_displacement(transform_list)
