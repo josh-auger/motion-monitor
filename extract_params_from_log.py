@@ -34,6 +34,7 @@ def find_lines_with_phrase(log_filename, line_search_phrase="FOR-REPORT", additi
                             i = next_line_index  # Move to the line after next_line
                 output_lines.append(output_line)
             i += 1
+    print("\nNum acquisition lines found:", len(lines_with_params))
     return output_lines
 
 def extract_numbers_from_lines(lines, number_search_pattern=r'\[(.*?)\]'):
@@ -51,7 +52,14 @@ def extract_numbers_from_lines(lines, number_search_pattern=r'\[(.*?)\]'):
         else:
             skipped_lines_count += 1
             skipped_lines.append((line, "No match found"))
-    return extracted_numbers, skipped_lines, skipped_lines_count
+
+    print("Num extracted parameter sets:", len(extracted_numbers))
+    if skipped_lines_count != 0:    # some lines were skipped - we need to know which/why!
+        print("Skipped lines (missing end bracket, ']'):", skipped_lines_count)
+        for skipped_line, error_message in skipped_lines:
+            print(f"Line: {skipped_line}, Error: {error_message}")
+
+    return extracted_numbers
 
 def create_euler_transform(parameters, rotation_center=[0.0, 0.0, 0.0]):
     euler_transform = sitk.Euler3DTransform()
@@ -74,7 +82,7 @@ def compute_transform_pairs(extracted_numbers):
     displacements.append(0) # final acquisition does not have next transform to compute displacement (yet)
     return displacements
 
-def compute_motion_score(extracted_numbers, r=50):
+def compute_motion_score(extracted_numbers, r=50):  # Yao's SLIMM method for comparison
     num_instances = len(extracted_numbers)
     displacements = []
     for i in range(num_instances - 1):
@@ -173,6 +181,13 @@ def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], log_f
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
 
+def plot_parameter_distributions(extracted_numbers):
+    # Generate a frequency histogram of each transform parameter, overlaid onto the same figure
+    # y-axis = frequency
+    # x-axis = mm or degrees for translation and rotation, respectively
+    # Indicate the lower and upper bounds of +/- 2 stddev (95% of data) and +/- 3 stddev (99.7%)
+    # save PNG of parameter distribution
+
 def plot_displacements(displacements, log_filename, threshold=None, total_volumes=None, volumes_above_threshold=None):
     # Create an output folder if it doesn't exist
     log_file_path, log_file_name = os.path.split(log_filename)
@@ -244,9 +259,7 @@ def export_values_csv(data_table, data_table_headers, log_filename):
 
 
 if __name__ == "__main__":
-    # Get log filename from system input arguments
     log_file = sys.argv[1]
-    # Specify log file location within the container
     log_filename = "/data/" + log_file
 
     # Extract multi-band (SMS) factor value
@@ -264,27 +277,14 @@ if __name__ == "__main__":
 
     # Find all lines reporting transform parameters
     lines_with_params = find_lines_with_phrase(log_filename, line_search_phrase = "FOR-REPORT", additional_search_phrase = "Kalman filtering")
-    print("\nNum acquisition lines found:", len(lines_with_params))
 
     # Extract numbers from the lines and count skipped lines
-    extracted_numbers, skipped_lines, skipped_lines_count = extract_numbers_from_lines(lines_with_params, number_search_pattern = r'\[(.*?)\]')
-    # print("\nExtracted parameters (first 5 sets):")
-    # for numbers_set in extracted_numbers[:5]:
-    #     print(numbers_set)
-    print("Num extracted parameter sets:", len(extracted_numbers))
-    print("Skipped lines (missing end bracket, ']'):", skipped_lines_count)
-    for skipped_line, error_message in skipped_lines:
-        print(f"Line: {skipped_line}, Error: {error_message}")
+    extracted_numbers = extract_numbers_from_lines(lines_with_params, number_search_pattern = r'\[(.*?)\]')
 
     # Compose transforms and calculate displacement between acquisitions
     displacements = compute_transform_pairs(extracted_numbers)
-    # displacements_updated = compute_motion_score(extracted_numbers, r=50)     # Yao's SLIMM method
-    # percent_diff = calculate_percent_diff(displacements_updated, displacements)
-    # print("\nDisplacements:")
-    # for displacement_value in displacements[:5]:
-    #     print(displacement_value)
-    print("\nNum displacement values:", len(displacements))
     cumulative_disp = sum(displacements)
+    print("\nNum displacement values:", len(displacements))
     print("Cumulative sum of displacement:", cumulative_disp)
 
     # Establish thresholds for motion
@@ -304,6 +304,7 @@ if __name__ == "__main__":
     rot_thresh = threshold_value / 50 # angle corresponding to arc length of threshold value, where radius = 50 mm
     trans_thresh = threshold_value # 25% of the pixel width
     plot_parameters(extracted_numbers, indices_to_plot, log_filename, titles, y_labels, rot_thresh, trans_thresh)
+    # plot_parameter_distributions(extracted_numbers)
 
     # Plot displacements
     plot_displacements(displacements, log_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
@@ -311,31 +312,3 @@ if __name__ == "__main__":
     # Export data table as CSV file
     data_table, data_table_headers = construct_data_table(np.array(extracted_numbers), np.array(displacements), np.array(volume_id))
     export_values_csv(data_table, data_table_headers, log_filename)
-
-    # --------- PRINT RESULTS ----------
-    # # Plotting percent_diff values
-    # print("Mean percent difference:", np.mean(percent_diff))
-    # print("Std-dev percent difference:", np.std(percent_diff))
-    # print("Min percent difference:", np.min(percent_diff))
-    # print("Max percent difference:", np.max(percent_diff))
-    #
-    # log_file_path, log_file_name = os.path.split(log_filename)
-    # output_folder = os.path.join(log_file_path, f"{os.path.splitext(log_file_name)[0]}_outputs")
-    # os.makedirs(output_folder, exist_ok=True)
-    # plt.figure(figsize=(10, 6))
-    # plt.plot(percent_diff, marker='o')
-    # plt.xlabel('Acquisition (slice timing) group')
-    # plt.ylabel('Percent Difference')
-    # plt.title('Percent Difference between l1 norm and l2 norm')
-    # plt.grid(True)
-    # # Save the plot with a .png extension
-    # base_name, _ = os.path.splitext(log_file_name)
-    # plot_filename = os.path.join(output_folder, f"{base_name}_percent_difference.png")
-    # counter = 1
-    # while os.path.exists(plot_filename):
-    #     plot_filename = os.path.join(output_folder, f"{base_name}_percent_difference_{counter}.png")
-    #     counter += 1
-    # plt.savefig(plot_filename)
-    # print(f"Percent difference plot saved as: {plot_filename}")
-    # plt.ion()
-    # plt.show(block=True)
