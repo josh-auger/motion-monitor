@@ -32,7 +32,7 @@ def parse_transform_file(file_path):
             raise ValueError(f"File {file_path} is missing required parameters.")
 
 
-def compile_transforms(directory_path):
+def get_data_from_transforms(directory_path):
     transform_list = []
     for filename in os.listdir(directory_path):
         if filename.endswith(".txt") or filename.endswith(".tfm"):
@@ -48,14 +48,13 @@ def compile_transforms(directory_path):
 
 if __name__ == "__main__":
     import argparse
-
     parser = argparse.ArgumentParser(description="Compile transform parameters from transform files.")
     parser.add_argument("directory_path", type=str, help="Path to the directory containing transform files.")
 
     args = parser.parse_args()
     directory_path = args.directory_path
 
-    transforms = compile_transforms(directory_path)
+    transforms = get_data_from_transforms(directory_path)
 
     for i, transform in enumerate(transforms):
         print(f"Transform {i}: {transform}")
