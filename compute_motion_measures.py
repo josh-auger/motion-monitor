@@ -72,7 +72,27 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
     print("Volumes without motion:", (total_volumes - volumes_above_threshold))
     return total_volumes, volumes_above_threshold, volume_id
 
-def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], log_filename="", titles=None, y_labels=None, rot_thresh=None, trans_thresh=None):
+
+def create_output_file(input_filepath, new_filename_string="", file_extension=""):
+    # Create an output folder, if it doesn't exist
+    input_parentdir, input_filename = os.path.split(input_filepath)
+    output_folder = os.path.join(input_parentdir, f"{os.path.splitext(input_filename)[0]}_outputs")
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Create new output filename
+    base_name, _ = os.path.splitext(input_filename)
+    output_filename = f"{base_name}_{new_filename_string}.{file_extension}"
+    output_filepath = os.path.join(output_folder, output_filename)
+    counter = 1
+    while os.path.exists(output_filepath):
+        new_output_filename = f"{base_name}_{new_filename_string}_{counter}.{file_extension}"
+        output_filepath = os.path.join(output_folder, new_output_filename)
+        counter += 1
+
+    return output_filepath
+
+
+def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], input_filepath="", titles=None, y_labels=None, rot_thresh=None, trans_thresh=None):
     valid_indices = all(0 <= index < len(extracted_numbers[0]) for index in indices_to_plot)
     if not valid_indices:
         print("Error: One (or more) indices are out of range.")
@@ -118,12 +138,7 @@ def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], log_f
             ax.axhline(y=-trans_thresh, color='r', linestyle='--', alpha=0.7)
     plt.tight_layout()
 
-    base_name, _ = os.path.splitext(log_file_name)
-    plot_filename = os.path.join(output_folder, f"{base_name}_parameters.png")
-    counter = 1
-    while os.path.exists(plot_filename):
-        plot_filename = os.path.join(output_folder, f"{base_name}_parameters_{counter}.png")
-        counter += 1
+    plot_filename = create_output_file(input_filepath, "parameters","png")
     plt.savefig(plot_filename)
     print(f"\n\nParameters plot saved to: {plot_filename}")
     plt.ion()
@@ -163,12 +178,7 @@ def plot_displacements(displacements, log_filename, threshold=None, total_volume
     plt.text(0.5, 0.9, text, ha='center', va='center', transform=plt.gca().transAxes,
              bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.5', alpha=0.7))
 
-    base_name, _ = os.path.splitext(log_file_name)
-    plot_filename = os.path.join(output_folder, f"{base_name}_displacements.png")
-    counter = 1
-    while os.path.exists(plot_filename):
-        plot_filename = os.path.join(output_folder, f"{base_name}_displacements_{counter}.png")
-        counter += 1
+    plot_filename = create_output_file(input_filepath, "displacements","png")
     plt.savefig(plot_filename)
     print(f"Displacements plot saved to: {plot_filename}")
     plt.ion()
@@ -189,16 +199,11 @@ def construct_data_table(extracted_numbers, displacements, volume_ID):
     return data_table, data_table_headers
 
 
-def export_values_csv(data_table, data_table_headers, log_filename):
+def export_values_csv(data_table, data_table_headers, input_filepath):
     if len(data_table_headers) != data_table.shape[1]:
         raise ValueError("Number of headers must match number of columns in data table!")
 
-    log_file_path, log_file_name = os.path.split(log_filename)
-    output_folder = os.path.join(log_file_path, f"{os.path.splitext(log_file_name)[0]}_outputs")
-    os.makedirs(output_folder, exist_ok=True)
-
-    base_name, _ = os.path.splitext(log_file_name)
-    csv_filename = os.path.join(output_folder, f"{base_name}_datatable.csv")
+    csv_filename = create_output_file(input_filepath, "datatable", "csv")
 
     header_string = ','.join(data_table_headers)
     np.savetxt(csv_filename, data_table, delimiter=",", header=header_string, comments='')
