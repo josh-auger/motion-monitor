@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import SimpleITK as sitk
 import numpy as np
 from compute_displacement import compute_displacement
-# from extract_params_from_log import
+from extract_params_from_log import get_data_from_slimm_log
 # from extract_params_from_transform_files import compile_transforms
 
 
