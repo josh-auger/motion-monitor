@@ -98,11 +98,6 @@ def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], input
         print("Error: One (or more) indices are out of range.")
         return
 
-    # Create an output folder if it doesn't exist
-    log_file_path, log_file_name = os.path.split(log_filename)
-    output_folder = os.path.join(log_file_path, f"{os.path.splitext(log_file_name)[0]}_outputs")
-    os.makedirs(output_folder, exist_ok=True)
-
     num_indices = len(indices_to_plot)
     fig, axes = plt.subplots(num_indices, 1, figsize=(8, 4 * num_indices))
     subplot_colors = ['b', 'g', 'r', 'c', 'm', 'y']  # Default colors for subsequent plots
