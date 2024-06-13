@@ -34,7 +34,7 @@ def find_lines_with_phrase(log_filename, line_search_phrase="FOR-REPORT", additi
                             i = next_line_index  # Move to the line after next_line
                 output_lines.append(output_line)
             i += 1
-    print("\nNum acquisition lines found:", len(lines_with_params))
+    print("\nNum acquisition lines found:", len(output_lines))
     return output_lines
 
 def extract_numbers_from_lines(lines, number_search_pattern=r'\[(.*?)\]'):
@@ -65,13 +65,13 @@ def get_data_from_slimm_log(log_filename):
     # Extract multi-band (SMS) factor value
     sms_factor_line = find_lines_with_phrase(log_filename, "MultiBandFactor", "</value>")
     sms_factor, *_ = extract_numbers_from_lines(sms_factor_line[:1], r'<value>(.*?)<\/value>')
-    sms_factor = float(sms_factor[0][0])  # unpack nested list value storage (used for saving transform parameters)
+    sms_factor = float(sms_factor[0])  # unpack nested list value storage (used for saving transform parameters)
     print("\nSMS factor = ", sms_factor)
 
     # Extract number of slices per volume
     num_vol_slices_line = find_lines_with_phrase(log_filename, "Number of slices per volume:")
     nslices_per_vol, *_ = extract_numbers_from_lines(num_vol_slices_line, r'(\d+)\.$')
-    nslices_per_vol = float(nslices_per_vol[0][0])
+    nslices_per_vol = float(nslices_per_vol[0])
     print("Num slices per volume:", nslices_per_vol)
     print("Num acquisitions per volume:", int(nslices_per_vol / sms_factor))
 
