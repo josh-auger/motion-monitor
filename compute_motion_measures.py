@@ -139,19 +139,48 @@ def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], input
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
 
-def plot_parameter_distributions(extracted_numbers):
-    # Generate a frequency histogram of each transform parameter, overlaid onto the same figure
-    # y-axis = frequency
-    # x-axis = mm or degrees for translation and rotation, respectively
-    # Indicate the lower and upper bounds of +/- 2 stddev (95% of data) and +/- 3 stddev (99.7%)
-    # save PNG of parameter distribution
+def plot_parameter_distributions(transform_list, input_filepath=""):
+    x_rotation = []
+    y_rotation = []
+    z_rotation = []
+    x_translation = []
+    y_translation = []
+    z_translation = []
 
-def plot_displacements(displacements, log_filename, threshold=None, total_volumes=None, volumes_above_threshold=None):
-    # Create an output folder if it doesn't exist
-    log_file_path, log_file_name = os.path.split(log_filename)
-    output_folder = os.path.join(log_file_path, f"{os.path.splitext(log_file_name)[0]}_outputs")
-    os.makedirs(output_folder, exist_ok=True)
+    for transform in transform_list:
+        x_rotation.append(np.degrees(transform[0]))
+        y_rotation.append(np.degrees(transform[1]))
+        z_rotation.append(np.degrees(transform[2]))
+        x_translation.append(transform[3])
+        y_translation.append(transform[4])
+        z_translation.append(transform[5])
 
+    plt.figure(figsize=(10, 6))
+    params = ['x_rotation', 'y_rotation', 'z_rotation', 'x_translation', 'y_translation', 'z_translation']
+    data = [x_rotation, y_rotation, z_rotation, x_translation, y_translation, z_translation]
+    colors = ['b', 'g', 'r', 'c', 'm', 'y']
+    for i, (param, values, color) in enumerate(zip(params, data, colors)):
+        hist_values, bins, _ = plt.hist(values, bins=100, alpha=0.5, label=param, color=color, density=True)
+
+    # Add bars denoting 99% coverage range
+    for i, (param, values, color) in enumerate(zip(params, data, colors)):
+        lower_bound = np.percentile(values, 0.5)
+        upper_bound = np.percentile(values, 99.5)
+        plt.hlines(-0.03, lower_bound, upper_bound, colors=color, linewidth=10)
+
+    plt.legend()
+    plt.xlabel('mm/degrees')
+    plt.ylabel('Normalized histogram')
+    plt.title('Histogram of motion parameters')
+
+    plot_filename = create_output_file(input_filepath, "parameters_distribution","png")
+    plt.savefig(plot_filename)
+    print(f"\n\nParameters distribution plot saved to: {plot_filename}")
+
+    plt.ion()
+    plt.show(block=False)
+
+def plot_displacements(displacements, input_filepath, threshold=None, total_volumes=None, volumes_above_threshold=None):
     plt.figure(figsize=(10, 6))
     plt.plot(displacements, marker='o', linestyle='-', color='b', alpha=0.7, label='Displacements (mm)')
     plt.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
