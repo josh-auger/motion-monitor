@@ -137,12 +137,8 @@ def create_output_file(input_filepath, new_filename_string="", file_extension=""
     return output_filepath
 
 
-def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], input_filepath="", titles=None, y_labels=None, rot_thresh=None, trans_thresh=None):
-    valid_indices = all(0 <= index < len(extracted_numbers[0]) for index in indices_to_plot)
-    if not valid_indices:
-        print("Error: One (or more) indices are out of range.")
-        return
-
+def plot_parameters(extracted_numbers, input_filepath="", titles=None, y_labels=None, trans_thresh=0.75, radius=50):
+    indices_to_plot = [0,1,2,3,4,5]     # which parameters to plot (column indices)
     num_indices = len(indices_to_plot)
     fig, axes = plt.subplots(num_indices, 1, figsize=(8, 4 * num_indices))
     subplot_colors = ['b', 'g', 'r', 'c', 'm', 'y']  # Default colors for subsequent plots
@@ -168,6 +164,7 @@ def plot_parameters(extracted_numbers, indices_to_plot=[0, 1, 2, 3, 4, 5], input
         ax.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
 
         # Plot dashed lines for threshold values
+        rot_thresh = trans_thresh / radius # assume head radius = 50 mm
         if rot_thresh is not None and i < 3:  # Check if rotation plot and threshold is specified
             ax.axhline(y=rot_thresh, color='r', linestyle='--', alpha=0.7,
                        label=f'Rotation Threshold ({rot_thresh})')
@@ -216,7 +213,7 @@ def plot_parameter_distributions(transform_list, input_filepath=""):
     plt.legend()
     plt.xlabel('mm/degrees')
     plt.ylabel('Normalized histogram')
-    plt.title('Histogram of motion parameters')
+    plt.title('Distribution of parameters : ' + input_filepath)
 
     plot_filename = create_output_file(input_filepath, "parameters_distribution","png")
     plt.savefig(plot_filename)
@@ -232,7 +229,7 @@ def plot_displacements(displacements, input_filepath, threshold=None, total_volu
     if threshold is not None:
         plt.axhline(y=threshold, color='r', linestyle='--', linewidth=3, alpha=1.0, label=f'Threshold = {threshold} mm')
 
-    plt.title('Displacement Tracking for : ' + log_file_name)
+    plt.title('Displacement Tracking : ' + input_filepath)
     plt.xlabel('Acquisition (slice timing) group')
     plt.ylabel('Displacement (mm)')
     plt.legend(loc='upper left')
@@ -312,15 +309,13 @@ if __name__ == "__main__":
 
     # Check displacements of each volume against motion threshold
     pixel_size = 2.4    # in mm
-    threshold_value = 0.75 # pixel_size*0.25  # threshold for acceptable motion (mm)
+    threshold_value = 0.75  # pixel_size*0.25  # threshold for acceptable motion (mm)
     total_volumes, volumes_above_threshold, volume_id = check_volume_motion(displacements, sms_factor, nslices_per_vol, threshold_value)
 
     # Plot transform parameters
-    indices_to_plot = [0, 1, 2, 3, 4, 5] # remember base 0 indexing!
     titles = ['X-axis Rotation', 'Y-axis Rotation', 'Z-axis Rotation', 'X-axis Translation', 'Y-axis Translation', 'Z-axis Translation']
     y_labels = ['X Rotation (rad)', 'Y Rotation (rad)', 'Z Rotation (rad)', 'X Translation (mm)', 'Y Translation (mm)', 'Z Translation (mm)']
-    rot_thresh = threshold_value / 50 # angle corresponding to arc length of threshold value, where radius = 50 mm
-    plot_parameters(transform_list, indices_to_plot, input_filepath, titles, y_labels, rot_thresh, threshold_value)
+    plot_parameters(transform_list, input_filepath, titles, y_labels, threshold_value, radius)
     plot_parameter_distributions(transform_list, input_filepath)
 
     # Plot displacements
