@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker build --rm -t jauger/log-motion-monitor:latest -f ./Dockerfile .
+docker build --rm -t jauger/motion-monitor:latest -f ./Dockerfile .
