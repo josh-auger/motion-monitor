@@ -73,9 +73,9 @@ def compute_displacement(transform1, transform2, radius=50, outputfile=None):
     euler3d.SetMatrix(combined_mat.flatten())
 
     # Compute displacement (Tisdall et al. 2012)
-    print(f"Head radius (mm) : {radius}")
+    # print(f"\tHead radius (mm) : {radius}")
     params = np.asarray( euler3d.GetParameters() )
-    print("Composed parameters (Euler3D) : ", params)
+    # print("\tComposed parameters (Euler3D) : ", params)
 
     theta = np.abs(np.arccos(0.5 * (-1 + np.cos(params[0]) * np.cos(params[1]) + \
                                     np.cos(params[0]) * np.cos(params[2]) + \
@@ -85,7 +85,7 @@ def compute_displacement(transform1, transform2, radius=50, outputfile=None):
     dtrans = np.linalg.norm(params[3:])
     displacement = drot + dtrans
 
-    print("Displacement : ", displacement)
+    print("\tDisplacement : ", displacement)
 
     return displacement
 
@@ -112,7 +112,7 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
         if any(d > threshold for d in volume_displacements):
             volumes_above_threshold += 1
 
-    print("Completed volumes (+ ref vol):", total_volumes)
+    print("Completed volumes (+ reference):", total_volumes)
     print("Volumes with motion:", volumes_above_threshold)
     print("Volumes without motion:", (total_volumes - volumes_above_threshold))
     return total_volumes, volumes_above_threshold, volume_id
@@ -181,7 +181,7 @@ def plot_parameters(extracted_numbers, input_filepath="", titles=None, y_labels=
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
 
-def plot_parameter_distributions(transform_list, input_filepath=""):
+def plot_parameter_distributions(transform_list, input_filepath="", offset=0.008):
     x_rotation = []
     y_rotation = []
     z_rotation = []
@@ -201,19 +201,22 @@ def plot_parameter_distributions(transform_list, input_filepath=""):
     params = ['x_rotation', 'y_rotation', 'z_rotation', 'x_translation', 'y_translation', 'z_translation']
     data = [x_rotation, y_rotation, z_rotation, x_translation, y_translation, z_translation]
     colors = ['b', 'g', 'r', 'c', 'm', 'y']
-    for i, (param, values, color) in enumerate(zip(params, data, colors)):
-        hist_values, bins, _ = plt.hist(values, bins=100, alpha=0.5, label=param, color=color, density=True)
 
-    # Add bars denoting 99% coverage range
     for i, (param, values, color) in enumerate(zip(params, data, colors)):
+        hist_values, bins = np.histogram(values, bins=100)
+        hist_values = hist_values / len(values)  # Normalize by the total count
+        bins_center = (bins[:-1] + bins[1:]) / 2
+        plt.plot(bins_center, hist_values, label=param, color=color, alpha=1.0)
+
+        # Calculate the 99% coverage range and plot it
         lower_bound = np.percentile(values, 0.5)
         upper_bound = np.percentile(values, 99.5)
-        plt.hlines(-0.03, lower_bound, upper_bound, colors=color, linewidth=10)
+        plt.hlines(-0.005 - i * offset, lower_bound, upper_bound, colors=color, linewidth=6)
 
     plt.legend()
     plt.xlabel('mm/degrees')
     plt.ylabel('Normalized histogram')
-    plt.title('Distribution of parameters : ' + input_filepath)
+    plt.title('Distribution of motion parameters : ' + input_filepath)
 
     plot_filename = create_output_file(input_filepath, "parameters_distribution","png")
     plt.savefig(plot_filename)
@@ -297,6 +300,7 @@ if __name__ == "__main__":
 
     # Calculate displacement between acquisitions
     radius = 50     # head radius assumption (mm)
+    print(f"\tHead radius (mm) : {radius}")
     displacements = compute_transform_pair_displacement(transform_list, radius)
 
     # Calculate cumulative displacement
