@@ -301,9 +301,14 @@ if __name__ == "__main__":
         raise ValueError("The input path is not a valid file.")
 
 
-    # Calculate displacement between acquisitions
+    # USER-SPECIFIED VALUES
     radius = 50     # head radius assumption (mm)
+    pixel_size = 2.4  # in mm
+    threshold_value = 0.75  # pixel_size*0.25  # threshold for acceptable motion (mm)
     print(f"\nHead radius (mm) : {radius}")
+    print(f"\nMotion threshold (mm) : {threshold_value}")
+
+    # Calculate displacement between acquisitions
     displacements = compute_transform_pair_displacement(transform_list, radius)
 
     # Calculate cumulative displacement
@@ -315,8 +320,6 @@ if __name__ == "__main__":
     # Calculate tSNR?
 
     # Check displacements of each volume against motion threshold
-    pixel_size = 2.4    # in mm
-    threshold_value = 0.75  # pixel_size*0.25  # threshold for acceptable motion (mm)
     total_volumes, volumes_above_threshold, volume_id = check_volume_motion(displacements, sms_factor, nslices_per_vol, threshold_value)
 
     # Plot transform parameters
