@@ -34,7 +34,6 @@ def find_lines_with_phrase(log_filename, line_search_phrase="FOR-REPORT", additi
                             i = next_line_index  # Move to the line after next_line
                 output_lines.append(output_line)
             i += 1
-    print("\nNum acquisition lines found:", len(output_lines))
     return output_lines
 
 def extract_numbers_from_lines(lines, number_search_pattern=r'\[(.*?)\]'):
@@ -53,7 +52,6 @@ def extract_numbers_from_lines(lines, number_search_pattern=r'\[(.*?)\]'):
             skipped_lines_count += 1
             skipped_lines.append((line, "No match found"))
 
-    print("Num extracted parameter sets:", len(extracted_numbers))
     if skipped_lines_count != 0:    # some lines were skipped - we need to know which/why!
         print("Skipped lines (missing end bracket, ']'):", skipped_lines_count)
         for skipped_line, error_message in skipped_lines:
@@ -79,6 +77,7 @@ def get_data_from_slimm_log(log_filename):
     lines_with_params = find_lines_with_phrase(log_filename, line_search_phrase="FOR-REPORT", additional_search_phrase="Kalman filtering")
     # Extract parameter numbers from the lines and count skipped lines
     transform_list = extract_numbers_from_lines(lines_with_params, number_search_pattern=r'\[(.*?)\]')
+    print("Number of extracted parameter sets:", len(transform_list))
 
     return transform_list, sms_factor, nslices_per_vol
 
