@@ -236,10 +236,12 @@ def export_values_csv(data_table, data_table_headers, input_filepath):
 
 
 if __name__ == "__main__":
-    input_file = sys.argv[1]
-    input_filename = "/data/" + input_file
+    input_filename = sys.argv[1]
+    input_filepath = "/data/" + input_filename
 
     # IF input_file = .log file, THEN extract transform parameters from log file
+    transform_list, sms_factor, nslices_per_vol = get_data_from_slimm_log(input_filepath)
+
     # IF input_file = .tfm or .txt file, THEN extract transform parameters from transform file(s)
     # return list of arrays of all transform parameters as "transform_list"
 
@@ -257,19 +259,19 @@ if __name__ == "__main__":
     # Check displacements of each volume against motion threshold
     pixel_size = 2.4
     threshold_value = 0.75 # pixel_size*0.25  # threshold for acceptable motion (in mm)
-    total_volumes, volumes_above_threshold, volume_id = check_volume_motion(displacements, sms_factor, num_vol_slices, threshold_value)
+    total_volumes, volumes_above_threshold, volume_id = check_volume_motion(displacements, sms_factor, nslices_per_vol, threshold_value)
 
     # Plot transform parameters
     indices_to_plot = [0, 1, 2, 3, 4, 5] # remember base 0 indexing!
     titles = ['X-axis Rotation', 'Y-axis Rotation', 'Z-axis Rotation', 'X-axis Translation', 'Y-axis Translation', 'Z-axis Translation']
     y_labels = ['X Rotation (rad)', 'Y Rotation (rad)', 'Z Rotation (rad)', 'X Translation (mm)', 'Y Translation (mm)', 'Z Translation (mm)']
     rot_thresh = threshold_value / 50 # angle corresponding to arc length of threshold value, where radius = 50 mm
-    plot_parameters(extracted_numbers, indices_to_plot, log_filename, titles, y_labels, rot_thresh, threshold_value)
-    # plot_parameter_distributions(extracted_numbers)
+    plot_parameters(transform_list, indices_to_plot, input_filepath, titles, y_labels, rot_thresh, threshold_value)
+    plot_parameter_distributions(transform_list, input_filepath)
 
     # Plot displacements
-    plot_displacements(displacements, log_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
+    plot_displacements(displacements, input_filepath, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
     # Export table of motion data (.csv file)
-    data_table, data_table_headers = construct_data_table(np.array(extracted_numbers), np.array(displacements), np.array(volume_id))
-    export_values_csv(data_table, data_table_headers, log_filename)
+    data_table, data_table_headers = construct_data_table(np.array(transform_list), np.array(displacements), np.array(volume_id))
+    export_values_csv(data_table, data_table_headers, input_filepath)
