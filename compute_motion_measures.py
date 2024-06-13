@@ -14,6 +14,7 @@ import os
 import sys
 import argparse
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 import SimpleITK as sitk
 import numpy as np
 from compute_displacement import compute_displacement
@@ -207,7 +208,7 @@ def plot_parameter_distributions(transform_list, input_filepath="", offset=0.008
 
     for i, (param, values, color) in enumerate(zip(params, data, colors)):
         hist_values, bins = np.histogram(values, bins=100)
-        hist_values = hist_values / len(values)  # Normalize by the total count
+        hist_values = hist_values / len(values)  # Normalize by total count
         bins_center = (bins[:-1] + bins[1:]) / 2
         plt.plot(bins_center, hist_values, label=param, color=color, alpha=1.0)
 
@@ -229,26 +230,44 @@ def plot_parameter_distributions(transform_list, input_filepath="", offset=0.008
     plt.show(block=False)
 
 def plot_displacements(displacements, input_filepath, threshold=None, total_volumes=None, volumes_above_threshold=None):
-    plt.figure(figsize=(10, 6))
-    plt.plot(displacements, marker='o', linestyle='-', color='b', alpha=0.7, label='Displacements (mm)')
-    plt.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
+    fig, axs = plt.subplots(1, 2, figsize=(15, 6))
+    gs = GridSpec(1, 2, width_ratios=[3, 1])  # Make the right subplot narrower
+
+    # Left subplot: displacement values per acquisition group
+    ax0 = fig.add_subplot(gs[0])
+    ax0.plot(displacements, marker='o', linestyle='-', color='b', alpha=0.7, label='Displacements (mm)')
+    ax0.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
     if threshold is not None:
-        plt.axhline(y=threshold, color='r', linestyle='--', linewidth=3, alpha=1.0, label=f'Threshold = {threshold} mm')
+        ax0.axhline(y=threshold, color='r', linestyle='--', linewidth=3, alpha=1.0, label=f'Threshold = {threshold} mm')
 
-    plt.title('Displacement Tracking : ' + input_filepath)
-    plt.xlabel('Acquisition (slice timing) group')
-    plt.ylabel('Displacement (mm)')
-    plt.legend(loc='upper left')
-    plt.tight_layout()
+    ax0.set_title('Displacement Tracking : ' + input_filepath)
+    ax0.set_xlabel('Acquisition (slice timing) group')
+    ax0.set_ylabel('Displacement (mm)')
+    ax0.legend(loc='upper left')
 
-    # Display number of acquisitions and cumulative displacement
+    # Display number of acquisitions and cumulative displacement on the left plot
     cumulative_sum = sum(displacements)
     total_sets = len(displacements)
     text = f'Number of Acquisitions: {total_sets}\nCumulative Displacement (mm): {cumulative_sum:.3f}'
     if total_volumes is not None and volumes_above_threshold is not None:
         text += f'\nTotal Collected Volumes: {total_volumes:.3f}\nVolumes with Motion: {volumes_above_threshold:.3f}\nVolumes without Motion: {(total_volumes - volumes_above_threshold):.3f}'
-    plt.text(0.5, 0.9, text, ha='center', va='center', transform=plt.gca().transAxes,
+    ax0.text(0.5, 0.9, text, ha='center', va='center', transform=ax0.transAxes,
              bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.5', alpha=0.7))
+
+    # Right subplot: boxplot of all displacement values
+    ax1 = fig.add_subplot(gs[1])
+    ax1.boxplot(displacements, vert=True, patch_artist=True,
+                boxprops=dict(facecolor='skyblue', color='black', alpha=1.0),
+                whiskerprops=dict(color='black'), capprops=dict(color='black'), medianprops=dict(color='black'))
+    # x_scatter = np.random.normal(1, 0.04, size=len(displacements))  # Jittered x positions
+    # ax1.scatter(x_scatter, displacements, color='black', alpha=0.05)
+
+    ax1.set_title('Displacement distribution')
+    ax1.set_ylabel('Displacement (mm)')
+    ax1.set_xticks([1])
+    ax1.set_xticklabels([''])
+
+    plt.tight_layout()
 
     plot_filename = create_output_file(input_filepath, "displacements","png")
     plt.savefig(plot_filename)
