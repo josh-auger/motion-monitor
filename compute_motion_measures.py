@@ -14,7 +14,6 @@ import os
 import sys
 import argparse
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
 import SimpleITK as sitk
 import numpy as np
 from compute_displacement import compute_displacement
@@ -58,7 +57,7 @@ def compute_transform_pair_displacement(transform_list, rotation_center, radius)
         displacement_value = compute_displacement(transform_previous, transform_i, radius)
         displacements.append(displacement_value)
 
-    print("\nNumber of displacement values:", len(displacements))
+    print("\nNumber of displacement values :", len(displacements))
     return displacements
 
 def compute_displacement(transform1, transform2, radius=50, outputfile=None):
@@ -103,7 +102,6 @@ def compute_displacement(transform1, transform2, radius=50, outputfile=None):
     displacement = drot + dtrans
 
     # print("\tDisplacement : ", displacement)
-
     return displacement
 
 def calculate_percent_diff(array1, array2):
@@ -129,10 +127,21 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
         if any(d > threshold for d in volume_displacements):
             volumes_above_threshold += 1
 
-    print("Total collected volumes (+ reference):", total_volumes)
-    print("Volumes with motion:", volumes_above_threshold)
-    print("Volumes without motion:", (total_volumes - volumes_above_threshold))
+    print("\nTotal collected volumes (+ reference) :", total_volumes)
+    print("Volumes with motion :", volumes_above_threshold)
+    print("Volumes without motion :", (total_volumes - volumes_above_threshold))
     return total_volumes, volumes_above_threshold, volume_id
+
+
+def calculate_motion_per_minute(displacements, acquisition_time):
+    print(f"Acquisition time : {acquisition_time} sec")
+    cumulative_disp = sum(displacements)
+    total_sets = len(displacements)
+
+    motion_per_minute = (cumulative_disp / total_sets) * (60 / acquisition_time)
+
+    print(f"Average motion per minute : {motion_per_minute} mm/min")
+    return motion_per_minute
 
 
 def create_output_file(input_filepath, new_filename_string="", file_extension=""):
@@ -194,7 +203,7 @@ def plot_parameters(extracted_numbers, input_filepath="", titles=None, y_labels=
 
     plot_filename = create_output_file(input_filepath, "parameters","png")
     plt.savefig(plot_filename)
-    print(f"\nParameters plot saved as: {plot_filename}")
+    print(f"\nParameters plot saved as : {plot_filename}")
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
 
@@ -254,7 +263,7 @@ def plot_parameter_distributions(transform_list, input_filepath="", offset_perce
 
     plot_filename = create_output_file(input_filepath, "parameters_distribution","png")
     plt.savefig(plot_filename)
-    print(f"Parameters distribution plot saved as: {plot_filename}")
+    print(f"Parameters distribution plot saved as : {plot_filename}")
 
     plt.ion()
     plt.show(block=False)
@@ -300,7 +309,7 @@ def plot_displacements(displacements, input_filepath, threshold=None, total_volu
 
     plot_filename = create_output_file(input_filepath, "displacements", "png")
     plt.savefig(plot_filename)
-    print(f"Displacements plot saved as: {plot_filename}")
+    print(f"Displacements plot saved as : {plot_filename}")
     plt.ion()
     plt.show(block=True)
 
@@ -321,7 +330,7 @@ def export_values_csv(data_table, data_table_headers, input_filepath):
     csv_filename = create_output_file(input_filepath, "datatable", "csv")
     header_string = ','.join(data_table_headers)
     np.savetxt(csv_filename, data_table, delimiter=",", header=header_string, comments='')
-    print(f"Data table saved as: {csv_filename}")
+    print(f"Data table saved as : {csv_filename}")
 
 
 if __name__ == "__main__":
@@ -345,22 +354,24 @@ if __name__ == "__main__":
         raise ValueError("The input path is not a valid file.")
 
 
-    # USER-SPECIFIED VALUES
+    # ---------- USER-SPECIFIED VALUES ----------
     radius = 50     # spherical head radius assumption (mm)
     pixel_size = 2.4  # in mm
     threshold_value = 0.75  # threshold for acceptable motion (mm)
+    acquisition_time = 4.2  # time between acquisitions/registration instances (sec)
     print(f"\nHead radius (mm) : {radius}")
     print(f"Motion threshold (mm) : {threshold_value}")
 
-    # Calculate displacement between acquisitions
+    # Displacement between acquisitions
     rotation_center, transform_list = get_rotation_center(transform_list)
     displacements = compute_transform_pair_displacement(transform_list, rotation_center, radius)
 
-    # Calculate cumulative displacement
+    # Cumulative displacement
     cumulative_disp = sum(displacements)
-    print(f"Cumulative sum of displacement: {cumulative_disp} mm")
+    print(f"Cumulative sum of displacement : {cumulative_disp} mm")
 
-    # Calculate motion per minute estimate
+    # Average motion per minute estimate
+    motion_per_min = calculate_motion_per_minute(displacements, acquisition_time)
 
     # Check displacements of each volume against motion threshold
     total_volumes, volumes_above_threshold, volume_id = check_volume_motion(displacements, sms_factor, nslices_per_vol, threshold_value)
