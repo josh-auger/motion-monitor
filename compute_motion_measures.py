@@ -185,7 +185,7 @@ def plot_parameters(extracted_numbers, input_filepath="", titles=None, y_labels=
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
 
-def plot_parameter_distributions(transform_list, input_filepath="", offset=0.008):
+def plot_parameter_distributions(transform_list, input_filepath="", offset_percent=0.03):
     x_rotation = []
     y_rotation = []
     z_rotation = []
@@ -206,16 +206,33 @@ def plot_parameter_distributions(transform_list, input_filepath="", offset=0.008
     data = [x_rotation, y_rotation, z_rotation, x_translation, y_translation, z_translation]
     colors = ['b', 'g', 'r', 'c', 'm', 'y']
 
-    for i, (param, values, color) in enumerate(zip(params, data, colors)):
-        hist_values, bins = np.histogram(values, bins=100)
+    max_hist_value = 0
+    histograms = []
+    n_bins = int(np.sqrt(len(transform_list)))      # square root heuristic choice for nbins
+
+    # Calculate normalized frequency counts and find max histogram value
+    for values in data:
+        hist_values, bins = np.histogram(values, bins=n_bins)
         hist_values = hist_values / len(values)  # Normalize by total count
+        histograms.append((hist_values, bins))
+        max_hist_value = max(max_hist_value, max(hist_values))
+
+    offset = offset_percent * max_hist_value    # define bar offsets based on max histogram value
+
+    for i, (param, (hist_values, bins), color) in enumerate(zip(params, histograms, colors)):
         bins_center = (bins[:-1] + bins[1:]) / 2
         plt.plot(bins_center, hist_values, label=param, color=color, alpha=1.0)
+        # plt.bar(bins_center, hist_values, width=(bins[1] - bins[0]), alpha=0.5, label=param, color=color)
 
-        # Calculate the 99% coverage range and plot it
+        # Calculate 99% coverage range to display
+        values = data[i]
         lower_bound = np.percentile(values, 0.5)
         upper_bound = np.percentile(values, 99.5)
-        plt.hlines(-0.005 - i * offset, lower_bound, upper_bound, colors=color, linewidth=6)
+        plt.hlines(-(0.6 * offset) - (i * offset), lower_bound, upper_bound, colors=color, linewidth=6)
+
+    y_ticks = plt.gca().get_yticks()
+    y_ticks = y_ticks[y_ticks >= 0]
+    plt.gca().set_yticks(y_ticks)
 
     plt.legend()
     plt.xlabel('mm/degrees')
@@ -305,6 +322,7 @@ if __name__ == "__main__":
     input_filename = sys.argv[1]
     input_filepath = "/data/" + input_filename
 
+    # Determine input type for pre-processing
     if os.path.isfile(input_filepath):
         if input_filepath.endswith(".log"):
             print("Processing log file...")
@@ -313,6 +331,8 @@ if __name__ == "__main__":
             print("Processing directory of transform files...")
             directory_path = os.path.dirname(input_filepath)
             transform_list = get_data_from_transforms(directory_path)
+            sms_factor = 1      # equivalent value for kooshball sequences??
+            nslices_per_vol = 1
         else:
             raise ValueError("Unsupported file extension. Please provide a .log, .txt, or .tfm file.")
     else:
