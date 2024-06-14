@@ -10,6 +10,7 @@
 import re
 import os
 import sys
+import logging
 import argparse
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
@@ -53,31 +54,32 @@ def extract_numbers_from_lines(lines, number_search_pattern=r'\[(.*?)\]'):
             skipped_lines.append((line, "No match found"))
 
     if skipped_lines_count != 0:    # some lines were skipped - we need to know which/why!
-        print("Skipped lines (missing end bracket, ']'):", skipped_lines_count)
+        logging.info("\tSkipped lines (missing end bracket, ']'):", skipped_lines_count)
         for skipped_line, error_message in skipped_lines:
-            print(f"Line: {skipped_line}, Error: {error_message}")
+            logging.info(f"\tLine: {skipped_line}, Error: {error_message}")
 
     return extracted_numbers
 
 def get_data_from_slimm_log(log_filename):
+    logging.info("Processing log file...")
     # Extract multi-band (SMS) factor value
     sms_factor_line = find_lines_with_phrase(log_filename, "MultiBandFactor", "</value>")
     sms_factor, *_ = extract_numbers_from_lines(sms_factor_line[:1], r'<value>(.*?)<\/value>')
     sms_factor = float(sms_factor[0])  # unpack nested list value storage (used for saving transform parameters)
-    print("\nSMS factor = ", sms_factor)
+    logging.info(f"\tSMS factor = {sms_factor}")
 
     # Extract number of slices per volume
     num_vol_slices_line = find_lines_with_phrase(log_filename, "Number of slices per volume:")
     nslices_per_vol, *_ = extract_numbers_from_lines(num_vol_slices_line, r'(\d+)\.$')
     nslices_per_vol = float(nslices_per_vol[0])
-    print("Num slices per volume:", nslices_per_vol)
-    print("Num acquisitions per volume:", int(nslices_per_vol / sms_factor))
+    logging.info(f"\tNum slices per volume: {nslices_per_vol}")
+    logging.info(f"\tNum acquisitions per volume: {int(nslices_per_vol/sms_factor)}")
 
     # Find all lines reporting transform parameters
     lines_with_params = find_lines_with_phrase(log_filename, line_search_phrase="FOR-REPORT", additional_search_phrase="Kalman filtering")
     # Extract parameter numbers from the lines and count skipped lines
     transform_list = extract_numbers_from_lines(lines_with_params, number_search_pattern=r'\[(.*?)\]')
-    print("Number of extracted parameter sets:", len(transform_list))
+    logging.info(f"\tNumber of extracted parameter sets: {len(transform_list)}")
 
     return transform_list, sms_factor, nslices_per_vol
 

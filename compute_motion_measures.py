@@ -353,19 +353,19 @@ if __name__ == "__main__":
 
     # Construct log filename with input filename and current date/time
     current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    log_filename = f"/data/motion_monitor_{current_time}.log"
+    log_filename = create_output_file(input_filepath,f"motion_monitor_{current_time}", "log")
     setup_logging(log_filename)
 
+    logging.info("Ahoy! Welcome to the motion-monitor, let's start monitoring some motion!")
+    logging.info("")
     logging.info(f"Logging to : {log_filename}")
     logging.info(f"Input filepath : {input_filepath}")
 
     # Determine input type for pre-processing
     if os.path.isfile(input_filepath):
         if input_filepath.endswith(".log"):
-            logging.info("Processing log file...")
             transform_list, sms_factor, nslices_per_vol = get_data_from_slimm_log(input_filepath)
         elif input_filepath.endswith(".txt") or input_filepath.endswith(".tfm"):
-            logging.info("Processing directory of transform files...")
             directory_path = os.path.dirname(input_filepath)
             transform_list = get_data_from_transforms(directory_path)
             sms_factor = 1      # equivalent value for kooshball sequences??
@@ -375,13 +375,14 @@ if __name__ == "__main__":
     else:
         raise ValueError("The input path is not a valid file.")
 
+    logging.info("")
+    logging.info("Calculating motion measures from transform parameters...")
 
     # ---------- USER-SPECIFIED VALUES ----------
     radius = 50     # spherical head radius assumption (mm)
     pixel_size = 2.4  # in mm
     threshold_value = 0.75  # threshold for acceptable motion (mm)
     acquisition_time = 4.2  # time between acquisitions/registration instances (sec)
-    logging.info("")
     logging.info(f"Head radius (mm) : {radius}")
     logging.info(f"Motion threshold (mm) : {threshold_value}")
 
@@ -411,3 +412,6 @@ if __name__ == "__main__":
     # Export table of motion data (.csv file)
     data_table, data_table_headers = construct_data_table(np.array(transform_list), np.array(displacements), np.array(volume_id))
     export_values_csv(data_table, data_table_headers, input_filepath)
+
+    logging.info("")
+    logging.info("...motion has been monitored. Come back soon!")

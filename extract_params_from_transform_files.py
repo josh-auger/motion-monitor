@@ -12,6 +12,7 @@
 
 import os
 import numpy as np
+import logging
 
 def parse_transform_file(file_path):
     with open(file_path, 'r') as file:
@@ -33,6 +34,7 @@ def parse_transform_file(file_path):
 
 
 def get_data_from_transforms(directory_path):
+    logging.info("Processing directory of transform files...")
     transform_list = []
     for filename in os.listdir(directory_path):
         if filename.endswith(".txt") or filename.endswith(".tfm"):
@@ -43,6 +45,7 @@ def get_data_from_transforms(directory_path):
             except ValueError as e:
                 print(e)
 
+    logging.info(f"\tNumber of extracted parameter sets: {len(transform_list)}")
     return transform_list
 
 
