@@ -16,10 +16,21 @@ import argparse
 import matplotlib.pyplot as plt
 import SimpleITK as sitk
 import numpy as np
+import logging
+import datetime
 from compute_displacement import compute_displacement
 from extract_params_from_log import get_data_from_slimm_log
 from extract_params_from_transform_files import get_data_from_transforms
 
+def setup_logging(log_filename):
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_filename),
+            logging.StreamHandler()
+        ]
+    )
 
 def get_rotation_center(transform_list):
     rotation_center = [0.0, 0.0, 0.0]  # Default rotation center
@@ -30,7 +41,7 @@ def get_rotation_center(transform_list):
             rotation_center = potential_rotation_center
             transform_list = [row[:-3] for row in transform_list]  # Remove rotation center columns
 
-    print(f"Center of rotation : {rotation_center}")
+    logging.info(f"Center of rotation : {rotation_center}")
     return rotation_center, transform_list
 
 def create_euler_transform(parameters, rotation_center):
@@ -57,7 +68,8 @@ def compute_transform_pair_displacement(transform_list, rotation_center, radius)
         displacement_value = compute_displacement(transform_previous, transform_i, radius)
         displacements.append(displacement_value)
 
-    print("\nNumber of displacement values :", len(displacements))
+    logging.info("")
+    logging.info(f"Number of displacement values : {len(displacements)}")
     return displacements
 
 def compute_displacement(transform1, transform2, radius=50, outputfile=None):
@@ -89,9 +101,9 @@ def compute_displacement(transform1, transform2, radius=50, outputfile=None):
     euler3d.SetMatrix(combined_mat.flatten())
 
     # Compute displacement (Tisdall et al. 2012)
-    # print(f"\tHead radius (mm) : {radius}")
+    # logging.info(f"\tHead radius (mm) : {radius}")
     params = np.asarray( euler3d.GetParameters() )
-    # print("\tComposed parameters (Euler3D) : ", params)
+    # logging.info(f"\tComposed parameters (Euler3D) : {params}")
 
     theta = np.abs(np.arccos(0.5 * (-1 + np.cos(params[0]) * np.cos(params[1]) + \
                                     np.cos(params[0]) * np.cos(params[2]) + \
@@ -101,7 +113,7 @@ def compute_displacement(transform1, transform2, radius=50, outputfile=None):
     dtrans = np.linalg.norm(params[3:])
     displacement = drot + dtrans
 
-    # print("\tDisplacement : ", displacement)
+    # logging.info(f"\tDisplacement : {displacement}")
     return displacement
 
 def calculate_percent_diff(array1, array2):
@@ -127,20 +139,21 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
         if any(d > threshold for d in volume_displacements):
             volumes_above_threshold += 1
 
-    print("\nTotal collected volumes (+ reference) :", total_volumes)
-    print("Volumes with motion :", volumes_above_threshold)
-    print("Volumes without motion :", (total_volumes - volumes_above_threshold))
+    logging.info("")
+    logging.info(f"Total collected volumes (+ reference) : {total_volumes}")
+    logging.info(f"Volumes with motion : {volumes_above_threshold}")
+    logging.info(f"Volumes without motion : {(total_volumes - volumes_above_threshold)}")
     return total_volumes, volumes_above_threshold, volume_id
 
 
 def calculate_motion_per_minute(displacements, acquisition_time):
-    print(f"Acquisition time : {acquisition_time} sec")
+    logging.info(f"Acquisition time (sec) : {acquisition_time}")
     cumulative_disp = sum(displacements)
     total_sets = len(displacements)
 
     motion_per_minute = (cumulative_disp / total_sets) * (60 / acquisition_time)
 
-    print(f"Average motion per minute : {motion_per_minute} mm/min")
+    logging.info(f"Average motion per minute (mm/min) : {motion_per_minute}")
     return motion_per_minute
 
 
@@ -203,7 +216,8 @@ def plot_parameters(extracted_numbers, input_filepath="", titles=None, y_labels=
 
     plot_filename = create_output_file(input_filepath, "parameters","png")
     plt.savefig(plot_filename)
-    print(f"\nParameters plot saved as : {plot_filename}")
+    logging.info("")
+    logging.info(f"Parameters plot saved as : {plot_filename}")
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
 
@@ -263,7 +277,7 @@ def plot_parameter_distributions(transform_list, input_filepath="", offset_perce
 
     plot_filename = create_output_file(input_filepath, "parameters_distribution","png")
     plt.savefig(plot_filename)
-    print(f"Parameters distribution plot saved as : {plot_filename}")
+    logging.info(f"Parameters distribution plot saved as : {plot_filename}")
 
     plt.ion()
     plt.show(block=False)
@@ -309,7 +323,7 @@ def plot_displacements(displacements, input_filepath, threshold=None, total_volu
 
     plot_filename = create_output_file(input_filepath, "displacements", "png")
     plt.savefig(plot_filename)
-    print(f"Displacements plot saved as : {plot_filename}")
+    logging.info(f"Displacements plot saved as : {plot_filename}")
     plt.ion()
     plt.show(block=True)
 
@@ -330,20 +344,28 @@ def export_values_csv(data_table, data_table_headers, input_filepath):
     csv_filename = create_output_file(input_filepath, "datatable", "csv")
     header_string = ','.join(data_table_headers)
     np.savetxt(csv_filename, data_table, delimiter=",", header=header_string, comments='')
-    print(f"Data table saved as : {csv_filename}")
+    logging.info(f"Data table saved as : {csv_filename}")
 
 
 if __name__ == "__main__":
     input_filename = sys.argv[1]
     input_filepath = "/data/" + input_filename
 
+    # Construct log filename with input filename and current date/time
+    current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    log_filename = f"/data/motion_monitor_{current_time}.log"
+    setup_logging(log_filename)
+
+    logging.info(f"Logging to : {log_filename}")
+    logging.info(f"Input filepath : {input_filepath}")
+
     # Determine input type for pre-processing
     if os.path.isfile(input_filepath):
         if input_filepath.endswith(".log"):
-            print("Processing log file...")
+            logging.info("Processing log file...")
             transform_list, sms_factor, nslices_per_vol = get_data_from_slimm_log(input_filepath)
         elif input_filepath.endswith(".txt") or input_filepath.endswith(".tfm"):
-            print("Processing directory of transform files...")
+            logging.info("Processing directory of transform files...")
             directory_path = os.path.dirname(input_filepath)
             transform_list = get_data_from_transforms(directory_path)
             sms_factor = 1      # equivalent value for kooshball sequences??
@@ -359,8 +381,9 @@ if __name__ == "__main__":
     pixel_size = 2.4  # in mm
     threshold_value = 0.75  # threshold for acceptable motion (mm)
     acquisition_time = 4.2  # time between acquisitions/registration instances (sec)
-    print(f"\nHead radius (mm) : {radius}")
-    print(f"Motion threshold (mm) : {threshold_value}")
+    logging.info("")
+    logging.info(f"Head radius (mm) : {radius}")
+    logging.info(f"Motion threshold (mm) : {threshold_value}")
 
     # Displacement between acquisitions
     rotation_center, transform_list = get_rotation_center(transform_list)
@@ -368,7 +391,7 @@ if __name__ == "__main__":
 
     # Cumulative displacement
     cumulative_disp = sum(displacements)
-    print(f"Cumulative sum of displacement : {cumulative_disp} mm")
+    logging.info(f"Cumulative sum of displacement (mm) : {cumulative_disp}")
 
     # Average motion per minute estimate
     motion_per_min = calculate_motion_per_minute(displacements, acquisition_time)
