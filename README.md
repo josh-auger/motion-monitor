@@ -56,5 +56,8 @@ third release for movie watching and retinotopy data. Scientific Data, 11(1), 59
 https://doi.org/10.1038/s41597-024-03390-1
 
 # Authorship
-Unless otherwise specified, this program was created by Joshua Auger, Ph.D. (joshua.auger@childrens.harvard.edu) within 
-the Computational Radiology Lab at Boston Children's Hospital, Boston, Massachusetts, USA.
+Unless otherwise specified, this program was created by the Computational Radiology Lab at Boston Children's Hospital, 
+Boston, Massachusetts, USA.
+
+Author(s): Auger, Joshua D.; Warfield, Simon K.\
+Affiliations: Boston Children's Hospital, Harvard University\
