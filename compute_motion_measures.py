@@ -3,11 +3,11 @@
 # Title: compute_motion_measures.py
 
 # Description:
-#
+# For an array list of transform parameters, various measures that characterize motion are computed and reported.
+# See USER-SPECIFIED VALUES in __main__ function to alter motion threshold or head radius assumption
 
 # Created on: June 2024
 # Created by: Joshua Auger (joshua.auger@childrens.harvard.edu), Computational Radiology Lab, Boston Children's Hospital
-
 
 import re
 import os
@@ -22,25 +22,38 @@ from extract_params_from_log import get_data_from_slimm_log
 from extract_params_from_transform_files import get_data_from_transforms
 
 
-def create_euler_transform(parameters, rotation_center=[0.0, 0.0, 0.0]):
+def get_rotation_center(transform_list):
+    rotation_center = [0.0, 0.0, 0.0]  # Default rotation center
+
+    if len(transform_list[0]) > 6:
+        potential_rotation_center = transform_list[0][-3:]
+        if all(np.array_equal(potential_rotation_center, row[-3:]) for row in transform_list):
+            rotation_center = potential_rotation_center
+            transform_list = [row[:-3] for row in transform_list]  # Remove rotation center columns
+
+    print(f"Center of rotation : {rotation_center}")
+    return rotation_center, transform_list
+
+def create_euler_transform(parameters, rotation_center):
     euler_transform = sitk.Euler3DTransform()
     euler_transform.SetParameters(parameters)
     euler_transform.SetCenter(rotation_center)
     return euler_transform
 
-def compute_transform_pair_displacement(extracted_numbers, radius):
-    num_instances = len(extracted_numbers)
+def compute_transform_pair_displacement(transform_list, rotation_center, radius):
+    num_instances = len(transform_list)
     displacements = []
+
     for i in range(num_instances):
         if i == 0:
-            parameters_previous = extracted_numbers[i]
+            parameters_previous = transform_list[i]
         else:
-            parameters_previous = extracted_numbers[i - 1]
+            parameters_previous = transform_list[i - 1]
 
-        parameters_i = extracted_numbers[i]
+        parameters_i = transform_list[i]
 
-        transform_previous = create_euler_transform(parameters_previous)
-        transform_i = create_euler_transform(parameters_i)
+        transform_previous = create_euler_transform(parameters_previous, rotation_center)
+        transform_i = create_euler_transform(parameters_i, rotation_center)
 
         displacement_value = compute_displacement(transform_previous, transform_i, radius)
         displacements.append(displacement_value)
@@ -247,7 +260,7 @@ def plot_parameter_distributions(transform_list, input_filepath="", offset_perce
     plt.show(block=False)
 
 def plot_displacements(displacements, input_filepath, threshold=None, total_volumes=None, volumes_above_threshold=None):
-    fig, axs = plt.subplots(1, 2, figsize=(15, 6), gridspec_kw={'width_ratios': [3, 1]})
+    fig, axs = plt.subplots(1, 2, figsize=(15, 6), gridspec_kw={'width_ratios': [3.5, 1]})
 
     # Left subplot: displacement values per acquisition group
     axs[0].plot(displacements, marker='o', linestyle='-', color='b', alpha=0.7, label='Displacements (mm)')
@@ -292,17 +305,12 @@ def plot_displacements(displacements, input_filepath, threshold=None, total_volu
     plt.show(block=True)
 
 
-def construct_data_table(extracted_numbers, displacements, volume_ID):
-    # print("Shapes of arrays:")
-    # print("extracted_numbers:", extracted_numbers.shape)
-    # print("displacements:", displacements.shape)
-    # print("volume_ID:", volume_ID.shape)
-    if len(extracted_numbers) != len(displacements) or len(displacements) != len(volume_ID) or len(extracted_numbers) != len(volume_ID):
+def construct_data_table(transform_list, displacements, volume_ID):
+    if len(transform_list) != len(displacements) or len(displacements) != len(volume_ID) or len(transform_list) != len(volume_ID):
         raise ValueError("Length of input arrays must be the same for concatenation.")
 
-    # combine transform parameters, slice displacements, and associated volume number into one numpy array table
-    data_table = np.hstack((extracted_numbers, displacements[..., np.newaxis], volume_ID[..., np.newaxis]))
-    data_table_headers = ['X_rotation(rad)','Y_rotation(rad)','Z_rotation(rad)','X_translation(mm)','Y_translation(mm)','Z_translation(mm)','Slice_displacement(mm)', 'Volume_number']
+    data_table = np.hstack((transform_list, displacements[..., np.newaxis], volume_ID[..., np.newaxis]))
+    data_table_headers = ['X_rotation(rad)','Y_rotation(rad)','Z_rotation(rad)','X_translation(mm)','Y_translation(mm)','Z_translation(mm)','Displacement(mm)', 'Volume_number']
     return data_table, data_table_headers
 
 
@@ -311,11 +319,9 @@ def export_values_csv(data_table, data_table_headers, input_filepath):
         raise ValueError("Number of headers must match number of columns in data table!")
 
     csv_filename = create_output_file(input_filepath, "datatable", "csv")
-
     header_string = ','.join(data_table_headers)
     np.savetxt(csv_filename, data_table, delimiter=",", header=header_string, comments='')
     print(f"Data table saved as: {csv_filename}")
-
 
 
 if __name__ == "__main__":
@@ -340,22 +346,21 @@ if __name__ == "__main__":
 
 
     # USER-SPECIFIED VALUES
-    radius = 50     # head radius assumption (mm)
+    radius = 50     # spherical head radius assumption (mm)
     pixel_size = 2.4  # in mm
-    threshold_value = 0.75  # pixel_size*0.25  # threshold for acceptable motion (mm)
+    threshold_value = 0.75  # threshold for acceptable motion (mm)
     print(f"\nHead radius (mm) : {radius}")
-    print(f"\nMotion threshold (mm) : {threshold_value}")
+    print(f"Motion threshold (mm) : {threshold_value}")
 
     # Calculate displacement between acquisitions
-    displacements = compute_transform_pair_displacement(transform_list, radius)
+    rotation_center, transform_list = get_rotation_center(transform_list)
+    displacements = compute_transform_pair_displacement(transform_list, rotation_center, radius)
 
     # Calculate cumulative displacement
     cumulative_disp = sum(displacements)
     print(f"Cumulative sum of displacement: {cumulative_disp} mm")
 
     # Calculate motion per minute estimate
-
-    # Calculate tSNR?
 
     # Check displacements of each volume against motion threshold
     total_volumes, volumes_above_threshold, volume_id = check_volume_motion(displacements, sms_factor, nslices_per_vol, threshold_value)
