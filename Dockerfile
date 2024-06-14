@@ -18,10 +18,10 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential \
 RUN pip3 install SimpleITK numpy matplotlib
 
 # Copy the Python scripts into the container
-COPY extract_params_from_log.py /app/extract_params_from_log.py
+COPY extract_params_from_log.py             /app/extract_params_from_log.py
 COPY extract_params_from_transform_files.py /app/extract_params_from_transform_files.py
-COPY compute_motion_measures.py /app/compute_motion_measures.py
-COPY compute_displacement.py /app/compute_displacement.py
+COPY compute_motion_measures.py             /app/compute_motion_measures.py
+COPY compute_displacement.py                /app/compute_displacement.py
 
 # Set the working directory inside the container
 WORKDIR /data
