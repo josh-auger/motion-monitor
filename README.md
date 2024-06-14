@@ -14,11 +14,11 @@ visualized, and saved in an outputs directory (compute_motion_measures.py). Thes
 - Average motion per minute
 - Classifying image volumes as with or without motion
 
-
 ## Build process
 To build the motion-monitor container:
 - Clone the github repository: https://github.com/josh-auger/motion-monitor
 - Build the docker image with the following docker build command:
+  - cd motion-monitor/
   - docker build --rm -t jauger/motion-monitor:latest -f ./Dockerfile .
   - Or execute the bash script containing the build command: sh build_docker_motion_monitor.sh
 
@@ -29,8 +29,12 @@ directory of the desired input file(s).
 - Update the INPUT_DIR string to be the correct directory
 
 To run the container, execute the following run command in the terminal window:
+- cd motion-monitor/
 - sh start_motion_monitor.sh [input filename]
 - Example: sh start_motion_monitor.sh slimm_2023-12-07_rest.log
+
+Motion-monitor will write all outputs and log files to the parent directory specified in the run bash script 
+(INPUT_DIR).
 
 
 # References
@@ -50,3 +54,7 @@ Shankar, S., Aggarwal, H., Thual, A., Chapalain, T., Ginisty, C., Becuwe-Desmidt
 Berland, V., Laurier, L., Joly-Testault, V., … Thirion, B. (2024). Individual Brain Charting dataset extension, 
 third release for movie watching and retinotopy data. Scientific Data, 11(1), 590. 
 https://doi.org/10.1038/s41597-024-03390-1
+
+# Authorship
+Unless otherwise specified, this program was created by Joshua Auger, Ph.D. (joshua.auger@childrens.harvard.edu) within 
+the Computational Radiology Lab at Boston Children's Hospital, Boston, Massachusetts, USA.
