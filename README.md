@@ -34,6 +34,7 @@ with line 384). These values can be altered as necessary.
 | `radius`         | Spherical head radius assumption used to calculate displacement                             | 50            | mm     |
 | `threshold_value`| Displacement threshold for acceptable motion                                                | 0.75          | mm     |
 | `acquisition_time`| Time between each instance of image acquisition used to calculate average motion per minute | 4.2           | sec    |
+
 If any user-specified values are altered in the source code, be sure to re-build the motion-monitor docker container 
 following the prior steps.
 
