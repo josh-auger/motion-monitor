@@ -131,19 +131,23 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
     total_volumes = (len(displacements) / num_acquisitions_per_volume) + 1 # plus 1 for the initial reference volume
     volumes_above_threshold = 0
     volume_id = []
+    motion_flag = []
 
     for i in range(0, len(displacements), num_acquisitions_per_volume):
         volume_count = i // num_acquisitions_per_volume + 1
         volume_displacements = displacements[i:i + num_acquisitions_per_volume]
         volume_id.extend([volume_count] * len(volume_displacements))
-        if any(d > threshold for d in volume_displacements):
+
+        current_motion_flag = [1 if d > threshold else 0 for d in volume_displacements]
+        motion_flag.extend(current_motion_flag)
+        if any(current_motion_flag):
             volumes_above_threshold += 1
 
     logging.info("")
     logging.info(f"Total collected volumes (+ reference) : {total_volumes}")
     logging.info(f"Volumes with motion : {volumes_above_threshold}")
     logging.info(f"Volumes without motion : {(total_volumes - volumes_above_threshold)}")
-    return total_volumes, volumes_above_threshold, volume_id
+    return total_volumes, volumes_above_threshold, volume_id, motion_flag
 
 
 def calculate_motion_per_minute(displacements, acquisition_time):
@@ -328,12 +332,12 @@ def plot_displacements(displacements, input_filepath, threshold=None, total_volu
     plt.show(block=True)
 
 
-def construct_data_table(transform_list, displacements, volume_ID):
+def construct_data_table(transform_list, displacements, volume_ID, motion_flag):
     if len(transform_list) != len(displacements) or len(displacements) != len(volume_ID) or len(transform_list) != len(volume_ID):
         raise ValueError("Length of input arrays must be the same for concatenation.")
 
-    data_table = np.hstack((transform_list, displacements[..., np.newaxis], volume_ID[..., np.newaxis]))
-    data_table_headers = ['X_rotation(rad)','Y_rotation(rad)','Z_rotation(rad)','X_translation(mm)','Y_translation(mm)','Z_translation(mm)','Displacement(mm)', 'Volume_number']
+    data_table = np.hstack((transform_list, displacements[..., np.newaxis], volume_ID[..., np.newaxis], motion_flag[..., np.newaxis]))
+    data_table_headers = ['X_rotation(rad)','Y_rotation(rad)','Z_rotation(rad)','X_translation(mm)','Y_translation(mm)','Z_translation(mm)','Displacement(mm)', 'Volume_number', 'Motion_flag']
     return data_table, data_table_headers
 
 
@@ -398,7 +402,7 @@ if __name__ == "__main__":
     motion_per_min = calculate_motion_per_minute(displacements, acquisition_time)
 
     # Check displacements of each volume against motion threshold
-    total_volumes, volumes_above_threshold, volume_id = check_volume_motion(displacements, sms_factor, nslices_per_vol, threshold_value)
+    total_volumes, volumes_above_threshold, volume_id, motion_flag = check_volume_motion(displacements, sms_factor, nslices_per_vol, threshold_value)
 
     # Plot transform parameters
     titles = ['X-axis Rotation', 'Y-axis Rotation', 'Z-axis Rotation', 'X-axis Translation', 'Y-axis Translation', 'Z-axis Translation']
@@ -410,7 +414,7 @@ if __name__ == "__main__":
     plot_displacements(displacements, input_filepath, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
     # Export table of motion data (.csv file)
-    data_table, data_table_headers = construct_data_table(np.array(transform_list), np.array(displacements), np.array(volume_id))
+    data_table, data_table_headers = construct_data_table(np.array(transform_list), np.array(displacements), np.array(volume_id), np.array(motion_flag))
     export_values_csv(data_table, data_table_headers, input_filepath)
 
     logging.info("")
