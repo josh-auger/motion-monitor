@@ -101,10 +101,8 @@ def compute_displacement(transform1, transform2, radius=50, outputfile=None):
     euler3d.SetMatrix(combined_mat.flatten())
 
     # Compute displacement (Tisdall et al. 2012)
-    # logging.info(f"\tHead radius (mm) : {radius}")
     params = np.asarray( euler3d.GetParameters() )
     # logging.info(f"\tComposed parameters (Euler3D) : {params}")
-
     theta = np.abs(np.arccos(0.5 * (-1 + np.cos(params[0]) * np.cos(params[1]) + \
                                     np.cos(params[0]) * np.cos(params[2]) + \
                                     np.cos(params[1]) * np.cos(params[2]) + \
@@ -385,7 +383,6 @@ if __name__ == "__main__":
 
     # ---------- USER-SPECIFIED VALUES ----------
     radius = 50     # spherical head radius assumption (mm)
-    pixel_size = 2.4  # in mm
     threshold_value = 0.75  # threshold for acceptable motion (mm)
     acquisition_time = 4.2  # time between acquisitions/registration instances (sec)
     logging.info(f"Head radius (mm) : {radius}")
