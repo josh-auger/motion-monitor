@@ -27,7 +27,7 @@ To build the motion-monitor container:
   - Or execute the bash script containing the build command: sh build_docker_motion_monitor.sh
 
 Some user-specified values are hard-coded into the motion measure analysis (see compute_motion_measures.py, beginning 
-with line 384). These values should be altered as necessary.
+with line 384). These values can be altered as necessary.
 
 | Variable Name    | Description                                                                                 | Default Value | Units  |
 |------------------|---------------------------------------------------------------------------------------------|---------------|--------|
