@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
-# Run with python3
+# Title: extract_params_from_log.py
 
-# Other code dependencies:
-# pyhelpers/compute_displacement.py
+# Description:
+# Read an input log file (*.log) from SLIMM and compile transform parameters into a list array.
+# Requires log filename ($INPUT_FILE) from docker run command and directory specified in start_motion_monitor.sh
 
-# Requires log filename argument ($LOG_FILE) from docker run command (start_motion_monitor.sh)
+# Created on: June 2024
+# Created by: Joshua Auger (joshua.auger@childrens.harvard.edu), Computational Radiology Lab, Boston Children's Hospital
 
 import re
 import os
