@@ -144,6 +144,7 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
             volumes_above_threshold += 1
 
     logging.info("")
+    logging.info(f"Number of displacements above threshold : {sum(motion_flag)}")
     logging.info(f"Total collected volumes (+ reference) : {total_volumes}")
     logging.info(f"Volumes with motion : {volumes_above_threshold}")
     logging.info(f"Volumes without motion : {(total_volumes - volumes_above_threshold)}")
