@@ -43,9 +43,9 @@ Prior to running the container, be sure to amend the run command bash script (st
 parent directory of the desired input file(s).
 - Open start_motion_monitor.sh in an editor
 - Update the INPUT_DIR string to be the correct directory
-- Examples:
-  - For a log file: INPUT_DIR="./example_files/logfile/"
-  - For transform files: INPUT_DIR="./example_files/transformfiles/"
+- Example: 
+  - INPUT_DIR="/path/to/input/file/"
+  - Example log file and transform files are available at: https://drive.google.com/drive/folders/102-aBblHQNH2ILIRsIKksuJP7NvKp6BM?usp=sharing
 
 To run the container, navigate to the motion-monitor directory and execute the run command bash script with a 
 specified input filename. The file extension will trigger the correct data input method (log file or directory
