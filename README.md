@@ -5,10 +5,10 @@ of alignment transform parameters to a reference.
 Based on the specified input file extension (.log or .txt/.tfm), the program will either (i) comb through a single log 
 file (see extract_params_from_log.py) to compile all the transform parameters that were reported during registration or 
 (ii) comb through a directory and read in all transform files (see extract_params_from_transform_files.py) for the reported 
-transform parameters.
+transform parameters, respectively.
 
-Once all transform parameters have been compiled into an array list, then a series of motion measures are calculated,
-visualized, and saved in an outputs directory (see compute_motion_measures.py). These include:
+Once all transform parameters have been compiled into an array list, then a series of motion measures are calculated 
+(see compute_motion_measures.py). These include:
 - Distribution histogram of motion transform parameters
 - Displacement between adjacent acquisition instances
 - Cumulative displacement over the entire scan
@@ -48,7 +48,7 @@ parent directory of the desired input file(s).
   - For transform files: INPUT_DIR="./example_files/transformfiles/"
 
 To run the container, navigate to the motion-monitor directory and execute the run command bash script with a 
-specified input filename. The file extension will trigger the correct input data read method (log file or directory
+specified input filename. The file extension will trigger the correct data input method (log file or directory
 of transform files).
 - cd motion-monitor/
 - sh start_motion_monitor.sh [input filename]
