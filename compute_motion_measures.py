@@ -68,7 +68,6 @@ def compute_transform_pair_displacement(transform_list, rotation_center, radius)
         displacement_value = compute_displacement(transform_previous, transform_i, radius)
         displacements.append(displacement_value)
 
-    logging.info("")
     logging.info(f"Number of displacement values : {len(displacements)}")
     return displacements
 
@@ -150,7 +149,7 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
 
 
 def calculate_motion_per_minute(displacements, acquisition_time):
-    logging.info(f"Acquisition time (sec) : {acquisition_time}")
+    # logging.info(f"Acquisition time (sec) : {acquisition_time}")
     cumulative_disp = sum(displacements)
     total_sets = len(displacements)
 
@@ -373,6 +372,10 @@ if __name__ == "__main__":
             transform_list = get_data_from_transforms(directory_path)
             sms_factor = 1      # equivalent value for kooshball sequences??
             nslices_per_vol = 1
+            logging.info(f"\tNo scan metadata found. Defaulting to:")
+            logging.info(f"\tSMS factor = {sms_factor}")
+            logging.info(f"\tNum slices per volume: {nslices_per_vol}")
+            logging.info(f"\tNum acquisitions per volume: {int(nslices_per_vol / sms_factor)}")
         else:
             raise ValueError("Unsupported file extension. Please provide a .log, .txt, or .tfm file.")
     else:
@@ -385,8 +388,12 @@ if __name__ == "__main__":
     radius = 50     # spherical head radius assumption (mm)
     threshold_value = 0.75  # threshold for acceptable motion (mm)
     acquisition_time = 4.2  # time between acquisitions/registration instances (sec)
-    logging.info(f"Head radius (mm) : {radius}")
-    logging.info(f"Motion threshold (mm) : {threshold_value}")
+    logging.info("")
+    logging.info(f"User-specified values:")
+    logging.info(f"\tHead radius (mm) : {radius}")
+    logging.info(f"\tMotion threshold (mm) : {threshold_value}")
+    logging.info(f"\tAcquisition time (sec): {acquisition_time}")
+    logging.info("")
 
     # Displacement between acquisitions
     rotation_center, transform_list = get_rotation_center(transform_list)
