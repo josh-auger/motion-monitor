@@ -15,10 +15,10 @@ visualized, and saved in an outputs directory (see compute_motion_measures.py). 
 - Average motion per minute
 - Classification of image volumes as with or without motion
 
-The motion-monitor will write a log file (*.log) to the parent directory specified in the run bash script (see 
-start_motion_monitor.sh).
+The motion-monitor will write all outputs and a log file (*.log) to an outputs sub-folder within the parent directory
+that is specified in the run bash script (see start_motion_monitor.sh).
 
-## Build process
+## Build Instructions
 To build the motion-monitor container:
 - Clone the github repository: https://github.com/josh-auger/motion-monitor
 - Build the docker image with the following docker build command:
@@ -38,16 +38,27 @@ with line 384). These values can be altered as necessary.
 If any user-specified values are altered in the source code, be sure to re-build the motion-monitor docker container 
 following the prior steps.
 
-## Run process
-Prior to running the container, be sure to amend the run bash script (start_motion_monitor.sh) to specify the parent
-directory of the desired input file(s).
+## Run Instructions
+Prior to running the container, be sure to amend the run command bash script (start_motion_monitor.sh) to specify the 
+parent directory of the desired input file(s).
 - Open start_motion_monitor.sh in an editor
 - Update the INPUT_DIR string to be the correct directory
+- Examples:
+  - For a log file: INPUT_DIR="./example_files/logfile/"
+  - For transform files: INPUT_DIR="./example_files/transformfiles/"
 
-To run the container, execute the following run command in the terminal window:
+To run the container, navigate to the motion-monitor directory and execute the run command bash script with a 
+specified input filename. The file extension will trigger the correct input data read method (log file or directory
+of transform files).
 - cd motion-monitor/
 - sh start_motion_monitor.sh [input filename]
-- Example: sh start_motion_monitor.sh slimm_2023-12-07_rest.log
+- Examples:
+  - For a log file: sh start_motion_monitor.sh example_rest480_slimm.log
+  - For transform files: sh start_motion_monitor.sh example_rest480_sliceTransform_0002.tfm
+
+- NOTE: A single input filename must be specified in the run command. For analysis of a directory of transform files,
+simply include one of the transform filenames as the input, typically the first file.
+
 
 
 # References

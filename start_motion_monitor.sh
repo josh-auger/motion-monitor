@@ -13,8 +13,8 @@
 
 # Specify local parent directory and grab input file
 #INPUT_DIR="/home/jauger/Radiology_Research/SLIMM_data/20231207_pre-hemi_4748062_SLIMM_logs/"
-#INPUT_DIR="/home_local/ch253208/"  # directory on crlreconmri SSH server
 INPUT_DIR="/home/jauger/Radiology_Research/MPnRAGE_kooshball_data/shot-by-shot_transforms/"  # directory of transform files
+#INPUT_DIR="./example_files/transformfiles/"
 INPUT_FILE=$1
 
 # Build the Docker image, if it does not yet exist
