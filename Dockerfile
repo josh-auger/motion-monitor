@@ -15,7 +15,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install SimpleITK numpy matplotlib
+RUN pip3 install SimpleITK numpy matplotlib pytz
 
 # Copy the Python scripts into the container
 COPY extract_params_from_log.py             /app/extract_params_from_log.py

@@ -18,11 +18,13 @@ import SimpleITK as sitk
 import numpy as np
 import logging
 import datetime
+import pytz
 from compute_displacement import compute_displacement
 from extract_params_from_log import get_data_from_slimm_log
 from extract_params_from_transform_files import get_data_from_transforms
 
-def setup_logging(log_filename):
+def setup_logging(input_filepath, start_time):
+    log_filename = create_output_file(input_filepath, f"motion_monitor", "log", start_time)
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(message)s',
@@ -31,6 +33,9 @@ def setup_logging(log_filename):
             logging.StreamHandler()
         ]
     )
+
+    logging.info(f"Logging to : {log_filename}")
+    return log_filename
 
 def get_rotation_center(transform_list):
     rotation_center = [0.0, 0.0, 0.0]  # Default rotation center
@@ -159,26 +164,25 @@ def calculate_motion_per_minute(displacements, acquisition_time):
     return motion_per_minute
 
 
-def create_output_file(input_filepath, new_filename_string="", file_extension=""):
+def create_output_file(input_filepath, new_filename_string="", file_extension="", start_time=None):
     # Create an output folder, if it doesn't exist
     input_parentdir, input_filename = os.path.split(input_filepath)
     output_folder = os.path.join(input_parentdir, f"{os.path.splitext(input_filename)[0]}_outputs")
     os.makedirs(output_folder, exist_ok=True)
 
+    # Use start_time if provided, else use the current time
+    if start_time is None:
+        start_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+
     # Create new output filename
     base_name, _ = os.path.splitext(input_filename)
-    output_filename = f"{base_name}_{new_filename_string}.{file_extension}"
+    output_filename = f"{base_name}_{new_filename_string}_{start_time}.{file_extension}"
     output_filepath = os.path.join(output_folder, output_filename)
-    counter = 1
-    while os.path.exists(output_filepath):
-        new_output_filename = f"{base_name}_{new_filename_string}_{counter}.{file_extension}"
-        output_filepath = os.path.join(output_folder, new_output_filename)
-        counter += 1
 
     return output_filepath
 
 
-def plot_parameters(extracted_numbers, input_filepath="", titles=None, y_labels=None, trans_thresh=0.75, radius=50):
+def plot_parameters(extracted_numbers, input_filepath="", output_filename="", titles=None, y_labels=None, trans_thresh=0.75, radius=50):
     indices_to_plot = [0,1,2,3,4,5]     # which parameters to plot (column indices)
     num_indices = len(indices_to_plot)
     fig, axes = plt.subplots(num_indices, 1, figsize=(8, 4 * num_indices))
@@ -216,14 +220,13 @@ def plot_parameters(extracted_numbers, input_filepath="", titles=None, y_labels=
             ax.axhline(y=-trans_thresh, color='r', linestyle='--', alpha=0.7)
     plt.tight_layout()
 
-    plot_filename = create_output_file(input_filepath, "parameters","png")
-    plt.savefig(plot_filename)
+    plt.savefig(output_filename)
     logging.info("")
-    logging.info(f"Parameters plot saved as : {plot_filename}")
+    logging.info(f"Parameters plot saved as : {output_filename}")
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
 
-def plot_parameter_distributions(transform_list, input_filepath="", offset_percent=0.03):
+def plot_parameter_distributions(transform_list, input_filepath="", output_filename="", offset_percent=0.03):
     x_rotation = []
     y_rotation = []
     z_rotation = []
@@ -277,14 +280,13 @@ def plot_parameter_distributions(transform_list, input_filepath="", offset_perce
     plt.ylabel('Normalized frequency')
     plt.title('Distribution of motion parameters : ' + input_filepath)
 
-    plot_filename = create_output_file(input_filepath, "parameters_distribution","png")
-    plt.savefig(plot_filename)
-    logging.info(f"Parameters distribution plot saved as : {plot_filename}")
+    plt.savefig(output_filename)
+    logging.info(f"Parameters distribution plot saved as : {output_filename}")
 
     plt.ion()
     plt.show(block=False)
 
-def plot_displacements(displacements, input_filepath, threshold=None, total_volumes=None, volumes_above_threshold=None):
+def plot_displacements(displacements, input_filepath="", output_filename="", threshold=None, total_volumes=None, volumes_above_threshold=None):
     fig, axs = plt.subplots(1, 2, figsize=(15, 6), gridspec_kw={'width_ratios': [3.5, 1]})
 
     # Left subplot: displacement values per acquisition group
@@ -323,9 +325,8 @@ def plot_displacements(displacements, input_filepath, threshold=None, total_volu
 
     plt.tight_layout()
 
-    plot_filename = create_output_file(input_filepath, "displacements", "png")
-    plt.savefig(plot_filename)
-    logging.info(f"Displacements plot saved as : {plot_filename}")
+    plt.savefig(output_filename)
+    logging.info(f"Displacements plot saved as : {output_filename}")
     plt.ion()
     plt.show(block=True)
 
@@ -339,29 +340,24 @@ def construct_data_table(transform_list, displacements, volume_ID, motion_flag):
     return data_table, data_table_headers
 
 
-def export_values_csv(data_table, data_table_headers, input_filepath):
+def export_values_csv(data_table, data_table_headers, output_filename):
     if len(data_table_headers) != data_table.shape[1]:
         raise ValueError("Number of headers must match number of columns in data table!")
 
-    csv_filename = create_output_file(input_filepath, "datatable", "csv")
     header_string = ','.join(data_table_headers)
-    np.savetxt(csv_filename, data_table, delimiter=",", header=header_string, comments='')
-    logging.info(f"Data table saved as : {csv_filename}")
+    np.savetxt(output_filename, data_table, delimiter=",", header=header_string, comments='')
+    logging.info(f"Data table saved as : {output_filename}")
 
 
 if __name__ == "__main__":
     input_filename = sys.argv[1]
     input_filepath = "/data/" + input_filename
 
-    # Construct log filename with input filename and current date/time
-    current_time = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    log_filename = create_output_file(input_filepath,f"motion_monitor_{current_time}", "log")
-    setup_logging(log_filename)
-
+    start_time = datetime.datetime.now(pytz.utc).astimezone(pytz.timezone('US/Eastern')).strftime('%Y%m%d_%H%M%S')  # Default to Eastern timezone!
+    setup_logging(input_filepath, start_time)
     logging.info("Ahoy! Welcome to the motion-monitor, let's start monitoring some motion!")
-    logging.info("")
-    logging.info(f"Logging to : {log_filename}")
     logging.info(f"Input filepath : {input_filepath}")
+    logging.info("")
 
     # Determine input type for pre-processing
     if os.path.isfile(input_filepath):
@@ -370,7 +366,7 @@ if __name__ == "__main__":
         elif input_filepath.endswith(".txt") or input_filepath.endswith(".tfm"):
             directory_path = os.path.dirname(input_filepath)
             transform_list = get_data_from_transforms(directory_path)
-            sms_factor = 1      # equivalent value for kooshball sequences??
+            sms_factor = 1      # assume these val=1 for kooshball sequence for now...
             nslices_per_vol = 1
             logging.info(f"\tNo scan metadata found. Defaulting to:")
             logging.info(f"\tSMS factor = {sms_factor}")
@@ -412,15 +408,19 @@ if __name__ == "__main__":
     # Plot transform parameters
     titles = ['X-axis Rotation', 'Y-axis Rotation', 'Z-axis Rotation', 'X-axis Translation', 'Y-axis Translation', 'Z-axis Translation']
     y_labels = ['X Rotation (rad)', 'Y Rotation (rad)', 'Z Rotation (rad)', 'X Translation (mm)', 'Y Translation (mm)', 'Z Translation (mm)']
-    plot_parameters(transform_list, input_filepath, titles, y_labels, threshold_value, radius)
-    plot_parameter_distributions(transform_list, input_filepath)
+    params_filename = create_output_file(input_filepath, "parameters", "png", start_time)
+    plot_parameters(transform_list, input_filepath, params_filename, titles, y_labels, threshold_value, radius)
+    params_dist_filename = create_output_file(input_filepath, "parameters_distribution", "png", start_time)
+    plot_parameter_distributions(transform_list, input_filepath, params_dist_filename)
 
     # Plot displacements
-    plot_displacements(displacements, input_filepath, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
+    disp_filename = create_output_file(input_filepath, "displacements", "png", start_time)
+    plot_displacements(displacements, input_filepath, disp_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
     # Export table of motion data (.csv file)
     data_table, data_table_headers = construct_data_table(np.array(transform_list), np.array(displacements), np.array(volume_id), np.array(motion_flag))
-    export_values_csv(data_table, data_table_headers, input_filepath)
+    csv_filename = create_output_file(input_filepath, "datatable", "csv", start_time)
+    export_values_csv(data_table, data_table_headers, csv_filename)
 
     logging.info("")
     logging.info("...motion has been monitored. Come back soon!")
