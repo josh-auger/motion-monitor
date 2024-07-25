@@ -428,4 +428,4 @@ if __name__ == "__main__":
     export_values_csv(data_table, data_table_headers, csv_filename)
 
     logging.info("")
-    logging.info("...motion has been monitored. Come back soon!")
+    logging.info("...motion has been monitored. Fair winds and fortune on the motion of the ocean to ye!")
