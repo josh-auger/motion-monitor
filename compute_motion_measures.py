@@ -351,6 +351,11 @@ def export_values_csv(data_table, data_table_headers, output_filename):
 
 if __name__ == "__main__":
     input_filename = sys.argv[1]
+    # Check if input_filename is just a filename and not a file path
+    if os.path.basename(input_filename) != input_filename:
+        raise ValueError("Scurvy dogs, we messed up! \n"
+        "The input argument should be a single filename (with .log, .txt, or .tfm extension) and NOT a file path. \n"
+        "Fix that blunder and give it another go, matey!")
     input_filepath = "/data/" + input_filename
 
     start_time = datetime.datetime.now(pytz.utc).astimezone(pytz.timezone('US/Eastern')).strftime('%Y%m%d_%H%M%S')  # Default to Eastern timezone!
@@ -373,9 +378,9 @@ if __name__ == "__main__":
             logging.info(f"\tNum slices per volume: {nslices_per_vol}")
             logging.info(f"\tNum acquisitions per volume: {int(nslices_per_vol / sms_factor)}")
         else:
-            raise ValueError("Unsupported file extension. Please provide a .log, .txt, or .tfm file.")
+            raise ValueError("Arrr! Unsupported file extension. Please provide a .log, .txt, or .tfm file.")
     else:
-        raise ValueError("The input path is not a valid file.")
+        raise ValueError("Arrr! The input path is not a valid file.")
 
     logging.info("")
     logging.info("Calculating motion measures from transform parameters...")

@@ -40,24 +40,25 @@ following the prior steps.
 
 ## Run Instructions
 Prior to running the container, be sure to amend the run command bash script (start_motion_monitor.sh) to specify the 
-parent directory of the desired input file(s).
+parent directory of the desired input file(s). This local directory is then shared with the container to give the 
+motion-monitor access to read the files that are present.
 - Open start_motion_monitor.sh in an editor
-- Update the INPUT_DIR string to be the correct directory
+- Update the INPUT_DIR string to be the correct parent directory
 - Example: 
-  - INPUT_DIR="/path/to/input/file/"
+  - INPUT_DIR="/path/to/parent/directory/of/input/files/"
   - Example log file and transform files are available at: https://drive.google.com/drive/folders/102-aBblHQNH2ILIRsIKksuJP7NvKp6BM?usp=sharing
 
-To run the container, navigate to the motion-monitor directory and execute the run command bash script with a 
-specified input filename. The file extension will trigger the correct data input method (log file or directory
-of transform files).
+Then, to run the container, navigate to the motion-monitor directory and call the start_motion_monitor.sh bash script 
+followed by a single input filename. The file extension of this input filename will trigger the correct data input 
+method (i.e. read a log file or read a directory of transform files).
 - cd motion-monitor/
 - sh start_motion_monitor.sh [input filename]
 - Examples:
   - For a log file: sh start_motion_monitor.sh example_rest480_slimm.log
   - For transform files: sh start_motion_monitor.sh example_rest480_sliceTransform_0002.tfm
 
-- NOTE: A single input filename must be specified in the run command. For analysis of a directory of transform files,
-simply include one of the transform filenames as the input, typically the first file.
+- *IMPORTANT* : One single input filename must be specified in the run command, NOT an entire filepath. For analysis of a 
+directory of transform files, include one of the transform filenames as the input, typically the first file.
 
 
 
