@@ -71,7 +71,7 @@ def compute_displacement(transform1, transform2, outputfile=None):
     versorrigid3d.SetMatrix(combined_mat.flatten())
     # print('\n')
     # print(versorrigid3d)
-    # print(versorrigid3d.GetParameters())
+    # print("Composed parameters (VersorRigid3D) : ", np.asarray(versorrigid3d.GetParameters()))
 
     # First three parameters are rotation angles in radians.
     # Second three parameters are translations.
@@ -112,7 +112,7 @@ def compute_displacement(transform1, transform2, outputfile=None):
 
 if __name__ == "__main__":
     # Example usage
-    transform1 = sitk.ReadTransform("transform1.txt")
-    transform2 = sitk.ReadTransform("transform2.txt")
+    transform1 = sitk.ReadTransform("/home/jauger/Radiology_Research/SLIMM_data/20240321_restingstate_480vols/20240701_slow_local_server_registration_recursive_transforms/rest480_BOBYQA_recursivetransform_test1/sliceTransform_0002.tfm")
+    transform2 = sitk.ReadTransform("/home/jauger/Radiology_Research/SLIMM_data/20240321_restingstate_480vols/20240701_slow_local_server_registration_recursive_transforms/rest480_BOBYQA_recursivetransform_test1/sliceTransform_0003.tfm")
     displacement_result = compute_displacement(transform1, transform2)
-    print("Displacement:", displacement_result)
+    # print("Displacement:", displacement_result)
