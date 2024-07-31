@@ -15,8 +15,8 @@ Once all transform parameters have been compiled into an array list, then a seri
 - Average motion per minute
 - Classification of image volumes as with or without motion
 
-The motion-monitor will write all outputs and a log file (*.log) to an outputs sub-folder within the parent directory
-that is specified in the run bash script (see start_motion_monitor.sh).
+The motion-monitor will write all outputs and a log file (*.log) to an outputs sub-folder (./inputfilename_outputs/) 
+within the parent directory that is specified in the run bash script (see Run Instructions below).
 
 ## Build Instructions
 To build the motion-monitor container:
