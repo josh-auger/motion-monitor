@@ -73,6 +73,7 @@ def compute_transform_pair_displacement(transform_list, rotation_center, radius)
         displacement_value = compute_displacement(transform_previous, transform_i, radius)
         displacements.append(displacement_value)
 
+    logging.info("")
     logging.info(f"Number of displacement values : {len(displacements)}")
     return displacements
 
@@ -106,7 +107,7 @@ def compute_displacement(transform1, transform2, radius=50, outputfile=None):
 
     # Compute displacement (Tisdall et al. 2012)
     params = np.asarray( euler3d.GetParameters() )
-    # logging.info(f"\tComposed parameters (Euler3D) : {params}")
+    logging.info(f"\tComposed parameters (Euler3D) : {params}")
     theta = np.abs(np.arccos(0.5 * (-1 + np.cos(params[0]) * np.cos(params[1]) + \
                                     np.cos(params[0]) * np.cos(params[2]) + \
                                     np.cos(params[1]) * np.cos(params[2]) + \
@@ -115,7 +116,7 @@ def compute_displacement(transform1, transform2, radius=50, outputfile=None):
     dtrans = np.linalg.norm(params[3:])
     displacement = drot + dtrans
 
-    # logging.info(f"\tDisplacement : {displacement}")
+    logging.info(f"\tDisplacement : {displacement}")
     return displacement
 
 def calculate_percent_diff(array1, array2):
@@ -162,6 +163,11 @@ def calculate_motion_per_minute(displacements, acquisition_time):
 
     logging.info(f"Average motion per minute (mm/min) : {motion_per_minute}")
     return motion_per_minute
+
+def calculate_cumulative_displacement(displacements):
+    cumulative_displacement = np.cumsum(displacements)
+
+    return cumulative_displacement
 
 
 def create_output_file(input_filepath, new_filename_string="", file_extension="", start_time=None):
@@ -330,13 +336,45 @@ def plot_displacements(displacements, input_filepath="", output_filename="", thr
     plt.ion()
     plt.show(block=True)
 
+def plot_cumulative_displacement(cumulative_displacements, input_filepath="", output_filename="", threshold=None, total_volumes=None, volumes_above_threshold=None):
+    fig, ax = plt.subplots(figsize=(12, 6))
 
-def construct_data_table(transform_list, displacements, volume_ID, motion_flag):
-    if len(transform_list) != len(displacements) or len(displacements) != len(volume_ID) or len(transform_list) != len(volume_ID):
+    # Plot cumulative displacement values per acquisition group
+    ax.plot(cumulative_displacements, marker='o', linestyle='-', color='b', alpha=0.7, label='Cumulative Displacements (mm)')
+    ax.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
+    if threshold is not None:
+        ax.axhline(y=threshold, color='r', linestyle='--', linewidth=3, alpha=1.0,
+                   label=f'Threshold = {threshold} mm')
+
+    ax.set_title('Cumulative Displacement Tracking : ' + input_filepath)
+    ax.set_xlabel('Acquisition (slice timing) group')
+    ax.set_ylabel('Cumulative Displacement (mm)')
+    ax.legend(loc='upper left')
+
+    # Display number of acquisitions and cumulative displacement on the plot
+    total_sets = len(cumulative_displacements)
+    final_cumulative_displacement = cumulative_displacements[-1]
+    text = f'Number of Acquisitions: {total_sets}\nFinal Cumulative Displacement (mm): {final_cumulative_displacement:.3f}'
+    if total_volumes is not None and volumes_above_threshold is not None:
+        text += f'\nTotal Collected Volumes: {total_volumes:.3f}\nVolumes with Motion: {volumes_above_threshold:.3f}\nVolumes without Motion: {(total_volumes - volumes_above_threshold):.3f}'
+    ax.text(0.5, 0.9, text, ha='center', va='center', transform=ax.transAxes,
+            bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.5', alpha=0.7))
+
+    plt.tight_layout()
+
+    plt.savefig(output_filename)
+    logging.info(f"Cumulative Displacements plot saved as : {output_filename}")
+    plt.ion()
+    plt.show(block=True)
+
+
+
+def construct_data_table(transform_list, displacements, cumulative_displacements, volume_ID, motion_flag):
+    if len(transform_list) != len(displacements) or len(displacements) != len(volume_ID) or len(transform_list) != len(volume_ID) or len(displacements) != len(cumulative_displacements):
         raise ValueError("Length of input arrays must be the same for concatenation.")
 
-    data_table = np.hstack((transform_list, displacements[..., np.newaxis], volume_ID[..., np.newaxis], motion_flag[..., np.newaxis]))
-    data_table_headers = ['X_rotation(rad)','Y_rotation(rad)','Z_rotation(rad)','X_translation(mm)','Y_translation(mm)','Z_translation(mm)','Displacement(mm)', 'Volume_number', 'Motion_flag']
+    data_table = np.hstack((transform_list, displacements[..., np.newaxis], cumulative_displacements[..., np.newaxis], volume_ID[..., np.newaxis], motion_flag[..., np.newaxis]))
+    data_table_headers = ['X_rotation(rad)','Y_rotation(rad)','Z_rotation(rad)','X_translation(mm)','Y_translation(mm)','Z_translation(mm)','Displacement(mm)', 'Cumulative_displacement(mm)', 'Volume_number', 'Motion_flag']
     return data_table, data_table_headers
 
 
@@ -422,8 +460,13 @@ if __name__ == "__main__":
     disp_filename = create_output_file(input_filepath, "displacements", "png", start_time)
     plot_displacements(displacements, input_filepath, disp_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
+    # Plot cumulative displacement over time
+    cumulative_displacements = calculate_cumulative_displacement(displacements)
+    cum_disp_filename = create_output_file(input_filepath, "displacements_cumulative", "png", start_time)
+    plot_cumulative_displacement(cumulative_displacements, input_filepath, cum_disp_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
+
     # Export table of motion data (.csv file)
-    data_table, data_table_headers = construct_data_table(np.array(transform_list), np.array(displacements), np.array(volume_id), np.array(motion_flag))
+    data_table, data_table_headers = construct_data_table(np.array(transform_list), np.array(displacements), np.array(cumulative_displacements), np.array(volume_id), np.array(motion_flag))
     csv_filename = create_output_file(input_filepath, "datatable", "csv", start_time)
     export_values_csv(data_table, data_table_headers, csv_filename)
 
