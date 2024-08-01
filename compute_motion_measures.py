@@ -147,6 +147,7 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
             volumes_above_threshold += 1
 
     logging.info("")
+    logging.info(f"Acceptable motion threshold (mm) :  {threshold}")
     logging.info(f"Number of displacements above threshold : {sum(motion_flag)}")
     logging.info(f"Total collected volumes (+ reference) : {total_volumes}")
     logging.info(f"Volumes with motion : {volumes_above_threshold}")
@@ -162,6 +163,7 @@ def calculate_motion_per_minute(displacements, acquisition_time):
     motion_per_minute = (cumulative_disp / total_sets) * (60 / acquisition_time)
 
     logging.info(f"Average motion per minute (mm/min) : {motion_per_minute}")
+    logging.info(f"\t^Based on the user-specified acquisition time of {acquisition_time} sec")
     return motion_per_minute
 
 def calculate_cumulative_displacement(displacements):
@@ -303,7 +305,7 @@ def plot_displacements(displacements, input_filepath="", output_filename="", thr
                        label=f'Threshold = {threshold} mm')
 
     axs[0].set_title('Displacement Tracking : ' + input_filepath)
-    axs[0].set_xlabel('Acquisition (slice timing) group')
+    axs[0].set_xlabel('Acquisition Instance')
     axs[0].set_ylabel('Displacement (mm)')
     axs[0].legend(loc='upper left')
 
@@ -347,7 +349,7 @@ def plot_cumulative_displacement(cumulative_displacements, input_filepath="", ou
                    label=f'Threshold = {threshold} mm')
 
     ax.set_title('Cumulative Displacement Tracking : ' + input_filepath)
-    ax.set_xlabel('Acquisition (slice timing) group')
+    ax.set_xlabel('Acquisition Instance')
     ax.set_ylabel('Cumulative Displacement (mm)')
     ax.legend(loc='upper left')
 
@@ -366,7 +368,6 @@ def plot_cumulative_displacement(cumulative_displacements, input_filepath="", ou
     logging.info(f"Cumulative Displacements plot saved as : {output_filename}")
     plt.ion()
     plt.show(block=True)
-
 
 
 def construct_data_table(transform_list, displacements, cumulative_displacements, volume_ID, motion_flag):
@@ -438,6 +439,7 @@ if __name__ == "__main__":
     threshold_value = 0.25*pixel_size  # threshold for acceptable motion (mm)
     logging.info("Based on the specified pixel size:")
     logging.info(f"\tMotion threshold (mm) : {threshold_value}")
+    logging.info("")
 
     # Displacement between acquisitions
     rotation_center, transform_list = get_rotation_center(transform_list)
@@ -468,7 +470,7 @@ if __name__ == "__main__":
     # Plot cumulative displacement over time
     cumulative_displacements = calculate_cumulative_displacement(displacements)
     cum_disp_filename = create_output_file(input_filepath, "displacements_cumulative", "png", start_time)
-    plot_cumulative_displacement(cumulative_displacements, input_filepath, cum_disp_filename, threshold=None, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
+    plot_cumulative_displacement(cumulative_displacements, input_filepath, cum_disp_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
     # Export table of motion data (.csv file)
     data_table, data_table_headers = construct_data_table(np.array(transform_list), np.array(displacements), np.array(cumulative_displacements), np.array(volume_id), np.array(motion_flag))
