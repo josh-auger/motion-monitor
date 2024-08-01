@@ -12,8 +12,8 @@ Once all transform parameters have been compiled into an array list, then a seri
 - Distribution histogram of motion transform parameters
 - Displacement between adjacent acquisition instances
 - Cumulative displacement over the entire scan
-- Average motion per minute
-- Classification of image volumes as with or without motion
+- Average motion per minute (based on the user-specified acquisition time)
+- Classification of image volumes as with or without motion (based on the acceptable motion threshold from pixel size)
 
 The motion-monitor will write all outputs and a log file (*.log) to an outputs sub-folder (./inputfilename_outputs/) 
 within the parent directory that is specified in the run bash script (see Run Instructions below).
@@ -29,11 +29,11 @@ To build the motion-monitor container:
 Some user-specified values are hard-coded into the motion measure analysis (see compute_motion_measures.py, beginning 
 with line 384). These values can be altered as necessary.
 
-| Variable Name    | Description                                                                                 | Default Value | Units  |
-|------------------|---------------------------------------------------------------------------------------------|---------------|--------|
-| `radius`         | Spherical head radius assumption used to calculate displacement                             | 50            | mm     |
-| `threshold_value`| Displacement threshold for acceptable motion                                                | 0.75          | mm     |
-| `acquisition_time`| Time between each instance of image acquisition used to calculate average motion per minute | 4.2           | sec    |
+| Variable Name      | Description                                                                                 | Default Value | Units  |
+|--------------------|---------------------------------------------------------------------------------------------|---------------|--------|
+| `radius`           | Spherical head radius assumption used to calculate displacement                             | 50            | mm     |
+| `pixel_size`       | Image pixel size used to calculate a motion threshold (25% of the pixel size)               | 2.4           | mm     |
+| `acquisition_time` | Time between each instance of image acquisition used to calculate average motion per minute | 4.2           | sec    |
 
 If any user-specified values are altered in the source code, be sure to re-build the motion-monitor docker container 
 following the prior steps.

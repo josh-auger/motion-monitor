@@ -425,14 +425,19 @@ if __name__ == "__main__":
 
     # ---------- USER-SPECIFIED VALUES ----------
     radius = 50     # spherical head radius assumption (mm)
-    threshold_value = 0.75  # threshold for acceptable motion (mm)
+    pixel_size = 2.4    # pixel size (mm) for calculating threshold value (as 25% of pixel size), assuming isotropic voxels
     acquisition_time = 4.2  # time between acquisitions/registration instances (sec)
     logging.info("")
     logging.info(f"User-specified values:")
     logging.info(f"\tHead radius (mm) : {radius}")
-    logging.info(f"\tMotion threshold (mm) : {threshold_value}")
-    logging.info(f"\tAcquisition time (sec): {acquisition_time}")
+    logging.info(f"\tPixel size (mm) : {pixel_size}")
+    logging.info(f"\tAcquisition time (sec) : {acquisition_time}")
     logging.info("")
+
+    # Calculate the acceptable motion threshold based on the pixel size (mm)
+    threshold_value = 0.25*pixel_size  # threshold for acceptable motion (mm)
+    logging.info("Based on the specified pixel size:")
+    logging.info(f"\tMotion threshold (mm) : {threshold_value}")
 
     # Displacement between acquisitions
     rotation_center, transform_list = get_rotation_center(transform_list)
