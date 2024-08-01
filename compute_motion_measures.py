@@ -463,7 +463,7 @@ if __name__ == "__main__":
     # Plot cumulative displacement over time
     cumulative_displacements = calculate_cumulative_displacement(displacements)
     cum_disp_filename = create_output_file(input_filepath, "displacements_cumulative", "png", start_time)
-    plot_cumulative_displacement(cumulative_displacements, input_filepath, cum_disp_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
+    plot_cumulative_displacement(cumulative_displacements, input_filepath, cum_disp_filename, threshold=None, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
     # Export table of motion data (.csv file)
     data_table, data_table_headers = construct_data_table(np.array(transform_list), np.array(displacements), np.array(cumulative_displacements), np.array(volume_id), np.array(motion_flag))
