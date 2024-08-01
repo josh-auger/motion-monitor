@@ -344,9 +344,12 @@ def plot_cumulative_displacement(cumulative_displacements, input_filepath="", ou
     # Plot cumulative displacement values per acquisition group
     ax.plot(cumulative_displacements, marker='o', linestyle='-', color='b', alpha=0.7, label='Cumulative Displacements (mm)')
     ax.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
+
     if threshold is not None:
-        ax.axhline(y=threshold, color='r', linestyle='--', linewidth=3, alpha=1.0,
-                   label=f'Threshold = {threshold} mm')
+        x = np.arange(len(cumulative_displacements))
+        y = threshold * x
+        ax.plot(x, y, color='r', linestyle='--', linewidth=1, alpha=1.0,
+                label=f'Acceptable Accumulation (slope = {threshold})')
 
     ax.set_title('Cumulative Displacement Tracking : ' + input_filepath)
     ax.set_xlabel('Acquisition Instance')
