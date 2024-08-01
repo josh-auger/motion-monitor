@@ -7,6 +7,7 @@ file (see extract_params_from_log.py) to compile all the transform parameters th
 (ii) comb through a directory and read in all transform files (see extract_params_from_transform_files.py) for the reported 
 transform parameters, respectively.
 
+### Expected outputs
 Once all transform parameters have been compiled into an array list, then a series of motion measures are calculated 
 (see compute_motion_measures.py). These include:
 - Distribution histogram of motion transform parameters
@@ -26,6 +27,7 @@ To build the motion-monitor container:
   - docker build --rm -t jauger/motion-monitor:latest -f ./Dockerfile .
   - Or execute the bash script containing the build command: sh build_docker_motion_monitor.sh
 
+### User-specified variables
 Some user-specified values are hard-coded into the motion measure analysis (see compute_motion_measures.py, beginning 
 with line 384). These values can be altered as necessary.
 
@@ -37,6 +39,11 @@ with line 384). These values can be altered as necessary.
 
 If any user-specified values are altered in the source code, be sure to re-build the motion-monitor docker container 
 following the prior steps.
+
+### Changing the motion threshold
+If a different motion threshold is desired, the pixel size can be artificially set to the corresponding value such that 
+25% of the pixel size will yield the desired motion threshold. The pixel size variable is not used for any other 
+calculation.
 
 ## Run Instructions
 Prior to running the container, be sure to amend the run command bash script (start_motion_monitor.sh) to specify the 
