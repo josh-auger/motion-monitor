@@ -158,17 +158,14 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
     return total_volumes, volumes_above_threshold, volume_id, motion_flag
 
 
-def calculate_motion_per_minute(displacements, acquisition_time):
-    # logging.info(f"Acquisition time (sec) : {acquisition_time}")
+def calculate_motion_per_minute(displacements):
     cumulative_disp = sum(displacements)
     total_sets = len(displacements)
 
     motion_per_acquisition = (cumulative_disp / total_sets)
-    motion_per_minute = (motion_per_acquisition) * (60 / acquisition_time)
 
     logging.info(f"Average motion per acquisition : {motion_per_acquisition}")
-    logging.info(f"\tGiven the user-specified acquisition time of {acquisition_time} sec,")
-    logging.info(f"\tthe average motion per minute (mm/min) : {motion_per_minute}")
+    logging.info(f"\tIf acquisition time (sec) is known, then motion per minute = (motion per acquisition) * (60 / acquisition time)")
     return motion_per_acquisition
 
 def calculate_cumulative_displacement(displacements):
@@ -435,12 +432,10 @@ if __name__ == "__main__":
     # ---------- USER-SPECIFIED VALUES ----------
     radius = 50     # spherical head radius assumption (mm)
     pixel_size = 2.4    # pixel size (mm) for calculating threshold value (as 25% of pixel size), assuming isotropic voxels
-    acquisition_time = 4.2  # time between acquisitions/registration instances (sec)
     logging.info("")
     logging.info(f"User-specified values:")
     logging.info(f"\tHead radius (mm) : {radius}")
     logging.info(f"\tPixel size (mm) : {pixel_size}")
-    logging.info(f"\tAcquisition time (sec) : {acquisition_time}")
     logging.info("")
 
     # Calculate the acceptable motion threshold based on the pixel size (mm)
@@ -458,7 +453,7 @@ if __name__ == "__main__":
     logging.info(f"Cumulative sum of displacement (mm) : {cumulative_disp}")
 
     # Average motion per minute estimate
-    motion_per_acquisition = calculate_motion_per_minute(displacements, acquisition_time)
+    motion_per_acquisition = calculate_motion_per_minute(displacements)
 
     # Check displacements of each volume against motion threshold
     total_volumes, volumes_above_threshold, volume_id, motion_flag = check_volume_motion(displacements, sms_factor, nslices_per_vol, threshold_value)
@@ -486,4 +481,4 @@ if __name__ == "__main__":
     export_values_csv(data_table, data_table_headers, csv_filename)
 
     logging.info("")
-    logging.info("...motion has been monitored. Fair winds and fortune on the motion of the ocean to ye!")
+    logging.info("...motion has been monitored. Come back soon!")

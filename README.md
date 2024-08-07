@@ -13,7 +13,7 @@ Once all transform parameters have been compiled into an array list, then a seri
 - Distribution histogram of motion transform parameters
 - Displacement between adjacent acquisition instances
 - Cumulative displacement over the entire scan
-- Average motion per minute (based on the user-specified acquisition time)
+- Average motion per acquisition (which can be used to calculate "motion per minute" if acquisition time is known)
 - Classification of image volumes as with or without motion (based on the acceptable motion threshold from pixel size)
 
 The motion-monitor will write all outputs and a log file (*.log) to an outputs sub-folder (./inputfilename_outputs/) 
@@ -31,13 +31,12 @@ To build the motion-monitor container:
 Some user-specified values are hard-coded into the motion measure analysis (see compute_motion_measures.py, beginning 
 with line 384). These values can be altered as necessary.
 
-| Variable Name      | Description                                                                                 | Default Value | Units  |
-|--------------------|---------------------------------------------------------------------------------------------|---------------|--------|
-| `radius`           | Spherical head radius assumption used to calculate displacement                             | 50            | mm     |
-| `pixel_size`       | Image pixel size used to calculate a motion threshold (25% of the pixel size)               | 2.4           | mm     |
-| `acquisition_time` | Time between each instance of image acquisition used to calculate average motion per minute | 4.2           | sec    |
+| Variable Name      | Description                                                                            | Default Value | Units  |
+|--------------------|----------------------------------------------------------------------------------------|---------------|--------|
+| `radius`           | Spherical head radius assumption used to calculate displacement                        | 50            | mm     |
+| `pixel_size`       | Image pixel size used to calculate a motion threshold (25% of the pixel size)          | 2.4           | mm     |
 
-If any user-specified values are altered in the source code, be sure to re-build the motion-monitor docker container 
+*IMPORTANT* : If any user-specified values are altered in the source code, be sure to re-build the motion-monitor docker container 
 following the prior steps.
 
 ### Changing the motion threshold
@@ -64,7 +63,7 @@ method (i.e. read a log file or read a directory of transform files).
   - For a log file: sh start_motion_monitor.sh example_rest480_slimm.log
   - For transform files: sh start_motion_monitor.sh example_rest480_sliceTransform_0002.tfm
 
-- *IMPORTANT* : One single input filename must be specified in the run command, NOT an entire filepath. For analysis of a 
+*IMPORTANT* : One single input filename must be specified in the run command, NOT an entire filepath. For analysis of a 
 directory of transform files, include one of the transform filenames as the input, typically the first file.
 
 
