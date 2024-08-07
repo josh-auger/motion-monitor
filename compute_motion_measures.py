@@ -160,11 +160,13 @@ def calculate_motion_per_minute(displacements, acquisition_time):
     cumulative_disp = sum(displacements)
     total_sets = len(displacements)
 
-    motion_per_minute = (cumulative_disp / total_sets) * (60 / acquisition_time)
+    motion_per_acquisition = (cumulative_disp / total_sets)
+    motion_per_minute = (motion_per_acquisition) * (60 / acquisition_time)
 
-    logging.info(f"Average motion per minute (mm/min) : {motion_per_minute}")
-    logging.info(f"\t^Based on the user-specified acquisition time of {acquisition_time} sec")
-    return motion_per_minute
+    logging.info(f"Average motion per acquisition : {motion_per_acquisition}")
+    logging.info(f"\tGiven the user-specified acquisition time of {acquisition_time} sec,")
+    logging.info(f"\tthe average motion per minute (mm/min) : {motion_per_minute}")
+    return motion_per_acquisition
 
 def calculate_cumulative_displacement(displacements):
     cumulative_displacement = np.cumsum(displacements)
@@ -453,7 +455,7 @@ if __name__ == "__main__":
     logging.info(f"Cumulative sum of displacement (mm) : {cumulative_disp}")
 
     # Average motion per minute estimate
-    motion_per_min = calculate_motion_per_minute(displacements, acquisition_time)
+    motion_per_acquisition = calculate_motion_per_minute(displacements, acquisition_time)
 
     # Check displacements of each volume against motion threshold
     total_volumes, volumes_above_threshold, volume_id, motion_flag = check_volume_motion(displacements, sms_factor, nslices_per_vol, threshold_value)
