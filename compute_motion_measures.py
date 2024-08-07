@@ -66,6 +66,8 @@ def compute_transform_pair_displacement(transform_list, rotation_center, radius)
             parameters_previous = transform_list[i - 1]
 
         parameters_i = transform_list[i]
+        logging.info(f"\tPrior transform parameters : {parameters_previous}")
+        logging.info(f"\tCurrent transform parameters : {parameters_i}")
 
         transform_previous = create_euler_transform(parameters_previous, rotation_center)
         transform_i = create_euler_transform(parameters_i, rotation_center)
@@ -117,6 +119,7 @@ def compute_displacement(transform1, transform2, radius=50, outputfile=None):
     displacement = drot + dtrans
 
     logging.info(f"\tDisplacement : {displacement}")
+    logging.info("")
     return displacement
 
 def calculate_percent_diff(array1, array2):
