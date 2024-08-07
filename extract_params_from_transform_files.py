@@ -28,24 +28,38 @@ def parse_transform_file(file_path):
                 fixed_parameters = list(map(float, line.split(":")[1].strip().split()))
 
         if parameters is not None and fixed_parameters is not None:
-            return np.array(parameters + fixed_parameters)
+            transform_params = np.array(parameters + fixed_parameters)
+            return transform_params
         else:
             raise ValueError(f"File {file_path} is missing required parameters.")
 
 
-def get_data_from_transforms(directory_path):
-    logging.info("Processing directory of transform files...")
-    transform_list = []
+def get_ordered_filepaths(directory_path):
+    filepaths = []
     for filename in os.listdir(directory_path):
         if filename.endswith(".txt") or filename.endswith(".tfm"):
             file_path = os.path.join(directory_path, filename)
-            try:
-                transform_params = parse_transform_file(file_path)
-                transform_list.append(transform_params)
-            except ValueError as e:
-                print(e)
+            filepaths.append(file_path)
+    filepaths.sort()  # Order by filename
+    return filepaths
 
-    logging.info(f"\tNumber of extracted parameter sets: {len(transform_list)}")
+def get_data_from_transforms(directory_path):
+    logging.info("Processing list of transform files...")
+    filepaths = get_ordered_filepaths(directory_path)
+    # # Print the sorted filepaths
+    # print("Sorted filepaths:")
+    # for filepath in filepaths:
+    #     print(filepath)
+
+    transform_list = []
+    for file_path in filepaths:
+        try:
+            transform_params = parse_transform_file(file_path)
+            transform_list.append(transform_params)
+        except ValueError as e:
+            logging.error(e)
+
+    logging.info(f"Number of extracted parameter sets: {len(transform_list)}")
     return transform_list
 
 
