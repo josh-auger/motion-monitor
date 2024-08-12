@@ -425,15 +425,15 @@ if __name__ == "__main__":
 
     # ---------- USER-SPECIFIED VALUES ----------
     radius = 50     # spherical head radius assumption (mm)
-    pixel_size = 2.4    # pixel size (mm) for calculating threshold value (as 25% of pixel size), assuming isotropic voxels
+    pixel_size = 2.4    # pixel size (mm) for calculating threshold value (25% of pixel size), assume isotropic voxels
     logging.info("")
     logging.info(f"User-specified values:")
     logging.info(f"\tHead radius (mm) : {radius}")
     logging.info(f"\tPixel size (mm) : {pixel_size}")
     logging.info("")
 
-    # Calculate the acceptable motion threshold based on the pixel size (mm)
-    threshold_value = 0.25*pixel_size  # threshold for acceptable motion (mm)
+    # Calculate acceptable motion threshold based on pixel size (mm)
+    threshold_value = 0.25*pixel_size
     logging.info("Based on the specified pixel size:")
     logging.info(f"\tMotion threshold (mm) : {threshold_value}")
     logging.info("")
@@ -446,7 +446,7 @@ if __name__ == "__main__":
     cumulative_disp = sum(displacements)
     logging.info(f"Cumulative sum of displacement (mm) : {cumulative_disp}")
 
-    # Average motion per minute estimate
+    # Average motion per acquisition
     motion_per_acquisition = calculate_motion_per_minute(displacements)
 
     # Check displacements of each volume against motion threshold
