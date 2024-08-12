@@ -28,4 +28,3 @@ WORKDIR /data
 
 # Set the entry point for the container to run the Python script with command-line arguments
 ENTRYPOINT ["python3", "/app/compute_motion_measures.py"]
-#ENTRYPOINT ["python3", "/app/hello_world.py"]
