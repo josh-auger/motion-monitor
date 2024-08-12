@@ -59,8 +59,17 @@ def get_data_from_transforms(directory_path):
         except ValueError as e:
             logging.error(e)
 
+    # Transform files do not contain metadata (i.e. SMS factor or number of slices per volume), default value = 1
+    logging.info(f"\tNo scan metadata found. Defaulting to:")
+    sms_factor = 1
+    nslices_per_vol = 1
+    logging.info(f"\tSMS factor = {sms_factor}")
+    logging.info(f"\tNum slices per volume: {nslices_per_vol}")
+    logging.info(f"\tNum acquisitions per volume: {int(nslices_per_vol / sms_factor)}")
+
     logging.info(f"Number of extracted parameter sets: {len(transform_list)}")
-    return transform_list
+
+    return transform_list, sms_factor, nslices_per_vol
 
 
 if __name__ == "__main__":

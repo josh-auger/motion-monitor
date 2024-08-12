@@ -414,13 +414,7 @@ if __name__ == "__main__":
             transform_list, sms_factor, nslices_per_vol = get_data_from_slimm_log(input_filepath)
         elif input_filepath.endswith(".txt") or input_filepath.endswith(".tfm"):
             directory_path = os.path.dirname(input_filepath)
-            transform_list = get_data_from_transforms(directory_path)
-            sms_factor = 1      # assume these val=1 for kooshball sequence for now...
-            nslices_per_vol = 1
-            logging.info(f"\tNo scan metadata found. Defaulting to:")
-            logging.info(f"\tSMS factor = {sms_factor}")
-            logging.info(f"\tNum slices per volume: {nslices_per_vol}")
-            logging.info(f"\tNum acquisitions per volume: {int(nslices_per_vol / sms_factor)}")
+            transform_list, sms_factor, nslices_per_vol = get_data_from_transforms(directory_path)
         else:
             raise ValueError("Arrr! Unsupported file extension. Please provide a .log, .txt, or .tfm file.")
     else:
