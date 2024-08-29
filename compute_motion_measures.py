@@ -177,7 +177,7 @@ def calculate_cumulative_displacement(displacements):
 def create_output_file(input_filepath, new_filename_string="", file_extension="", start_time=None):
     # Create an output folder, if it doesn't exist
     input_parentdir, input_filename = os.path.split(input_filepath)
-    output_folder = os.path.join(input_parentdir, f"{os.path.splitext(input_filename)[0]}_outputs")
+    output_folder = os.path.join(input_parentdir, f"{os.path.splitext(input_filename)[0]}_motionmonitor_outputs")
     os.makedirs(output_folder, exist_ok=True)
 
     # Use start_time if provided, else use the current time
