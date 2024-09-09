@@ -79,9 +79,13 @@ def get_data_from_slimm_log(log_filename):
 
     # Find all lines reporting transform parameters
     lines_with_params = find_lines_with_phrase(log_filename, line_search_phrase="FOR-REPORT", additional_search_phrase="Kalman filtering")
+    if len(lines_with_params) == 0:
+        logging.info(f"\tERROR: No log lines with parameters found! (No lines containing 'FOR-REPORT' and 'Kalman filtering' were found)")
     # Extract parameter numbers from the lines and count skipped lines
     transform_list = extract_numbers_from_lines(lines_with_params, number_search_pattern=r'\[(.*?)\]')
     logging.info(f"\tNumber of extracted parameter sets: {len(transform_list)}")
+    if len(transform_list) == 0:
+        logging.info(f"\tERROR: No parameter sets found!")
 
     return transform_list, sms_factor, nslices_per_vol
 

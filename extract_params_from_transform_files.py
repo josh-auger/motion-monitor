@@ -68,6 +68,8 @@ def get_data_from_transforms(directory_path):
     logging.info(f"\tNum acquisitions per volume: {int(nslices_per_vol / sms_factor)}")
 
     logging.info(f"Number of extracted parameter sets: {len(transform_list)}")
+    if len(transform_list) == 0:
+        logging.info(f"\tERROR: No parameter sets found!")
 
     return transform_list, sms_factor, nslices_per_vol
 
