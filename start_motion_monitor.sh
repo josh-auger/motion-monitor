@@ -15,9 +15,9 @@
 INPUT_DIR="/home/jauger/Radiology_Research/SLIMM_data/20231102_44828-004_scan_04/LogFiles/"
 INPUT_FILE=$1
 
-# Specify motion calculation variables (i.e. acceptable motion threshold (mm), assumed head radius (mm))
-motion_threshold=0.6
+# Specify motion calculation variables (i.e. assumed head radius (mm), acceptable motion threshold (mm))
 head_radius=50
+motion_threshold=0.6
 
 # Build the Docker image, if it does not yet exist
 #docker build -t jauger/motion-monitor .
@@ -26,5 +26,5 @@ docker run --rm \
   -v $INPUT_DIR:/data \
   jauger/motion-monitor:latest \
   $INPUT_FILE \
-  $motion_threshold \
-  $head_radius
+  $head_radius \
+  $motion_threshold

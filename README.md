@@ -27,24 +27,8 @@ To build the motion-monitor container:
   - docker build --rm -t jauger/motion-monitor:latest -f ./Dockerfile .
   - Or execute the bash script containing the build command: sh build_docker_motion_monitor.sh
 
-### User-specified variables
-Some user-specified values are hard-coded into the motion measure analysis (see compute_motion_measures.py, beginning 
-with line 384). These values can be altered as necessary.
-
-| Variable Name      | Description                                                                            | Default Value | Units  |
-|--------------------|----------------------------------------------------------------------------------------|---------------|--------|
-| `radius`           | Spherical head radius assumption used to calculate displacement                        | 50            | mm     |
-| `pixel_size`       | Image pixel size used to calculate a motion threshold (25% of the pixel size)          | 2.4           | mm     |
-
-*IMPORTANT* : If any user-specified values are altered in the source code, be sure to re-build the motion-monitor docker container 
-following the prior steps.
-
-### Changing the motion threshold
-If a different motion threshold is desired, the pixel size can be artificially set to the corresponding value such that 
-25% of the pixel size will yield the desired motion threshold. The pixel size variable is not used for any other 
-calculation.
-
-## Run Instructions
+## Bash script setup
+### Set input parent directory
 Prior to running the container, be sure to amend the run command bash script (start_motion_monitor.sh) to specify the 
 parent directory of the desired input file(s). This local directory is then shared with the container to give the 
 motion-monitor access to read the files that are present.
@@ -54,7 +38,18 @@ motion-monitor access to read the files that are present.
   - INPUT_DIR="/path/to/parent/directory/of/input/files/"
   - Example log file and transform files are available at: https://drive.google.com/drive/folders/102-aBblHQNH2ILIRsIKksuJP7NvKp6BM?usp=sharing
 
-Then, to run the container, navigate to the motion-monitor directory and call the start_motion_monitor.sh bash script 
+### Set motion calculation variables
+Some user-specified values are required for calculating motion and can be altered as necessary in the run command bash 
+script. If no input values are specified in the bash script, the listed default values will be used.
+
+| Variable Name      | Description                                                     | Default Value | Units  |
+|--------------------|-----------------------------------------------------------------|---------------|--------|
+| `head_radius`      | Spherical head radius assumption used to calculate displacement | 50            | mm     |
+| `motion_threshold` | Acceptable threshold of displacement motion measure             | 0.6           | mm     |
+
+
+## Run Instructions
+To run the container, navigate to the motion-monitor directory and call the start_motion_monitor.sh bash script 
 followed by a single input filename. The file extension of this input filename will trigger the correct data input 
 method (i.e. read a log file or read a directory of transform files).
 - cd motion-monitor/
