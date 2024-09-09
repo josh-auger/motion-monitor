@@ -424,8 +424,17 @@ if __name__ == "__main__":
     logging.info("Calculating motion measures from transform parameters...")
 
     # ---------- USER-SPECIFIED VALUES ----------
-    radius = float(sys.argv[3])     # spherical head radius assumption (mm)
-    threshold_value = float(sys.argv[2])    # threshold of acceptable motion (mm)
+    try:
+        threshold_value = float(sys.argv[2])    # threshold of acceptable motion (mm)
+    except (IndexError, ValueError):
+        print("Threshold value not specified or invalid. Used default value: 0.6 mm")
+        threshold_value = 0.6
+
+    try:
+        radius = float(sys.argv[3])     # spherical head radius assumption (mm)
+    except (IndexError, ValueError):
+        print("Radius not specified or invalid. Used default value: 50 mm")
+        radius = 50.0
     logging.info("")
     logging.info(f"User-specified values:")
     logging.info(f"\tHead radius (mm) : {radius}")
