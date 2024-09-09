@@ -6,16 +6,18 @@
 # Run command needs to include the specific input filename (with extension) to monitor.
 #
 # Example run command for SLIMM log file input
-# sh start_motion_monitor.sh slimm_2024-04-02_09.21.28.log
+# sh start_motion_monitor.sh slimm_2024-08-22_15.06.20.log
 #
 # Example run command for directory of transform files input
 # sh start_motion_monitor.sh navigator_versor001.txt
 
 # Specify local parent directory and grab input file
-#INPUT_DIR="/home/jauger/Radiology_Research/SLIMM_data/20231207_pre-hemi_4748062_SLIMM_logs/"
-INPUT_DIR="/home/jauger/Radiology_Research/MPnRAGE_kooshball_data/shot-by-shot_transforms/"  # directory of transform files
-#INPUT_DIR="./example_files/transformfiles/"
+INPUT_DIR="/home/jauger/Radiology_Research/SLIMM_data/20231102_44828-004_scan_04/LogFiles/"
 INPUT_FILE=$1
+
+# Specify motion calculation variables
+motion_threshold=0.6
+head_radius=50
 
 # Build the Docker image, if it does not yet exist
 #docker build -t jauger/motion-monitor .
@@ -23,4 +25,6 @@ INPUT_FILE=$1
 docker run --rm \
   -v $INPUT_DIR:/data \
   jauger/motion-monitor:latest \
-  $INPUT_FILE
+  $INPUT_FILE \
+  $motion_threshold \
+  $head_radius

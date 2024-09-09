@@ -424,17 +424,11 @@ if __name__ == "__main__":
     logging.info("Calculating motion measures from transform parameters...")
 
     # ---------- USER-SPECIFIED VALUES ----------
-    radius = 50     # spherical head radius assumption (mm)
-    pixel_size = 2.4    # pixel size (mm) for calculating threshold value (25% of pixel size), assume isotropic voxels
+    radius = float(sys.argv[3])     # spherical head radius assumption (mm)
+    threshold_value = float(sys.argv[2])    # threshold of acceptable motion (mm)
     logging.info("")
     logging.info(f"User-specified values:")
     logging.info(f"\tHead radius (mm) : {radius}")
-    logging.info(f"\tPixel size (mm) : {pixel_size}")
-    logging.info("")
-
-    # Calculate acceptable motion threshold based on pixel size (mm)
-    threshold_value = 0.25*pixel_size
-    logging.info("Based on the specified pixel size:")
     logging.info(f"\tMotion threshold (mm) : {threshold_value}")
     logging.info("")
 
