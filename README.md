@@ -14,7 +14,7 @@ Once all transform parameters have been compiled into an array list, then a seri
 - Displacement between adjacent acquisition instances
 - Cumulative displacement over the entire scan
 - Average motion per acquisition (which can be used to calculate "motion per minute" if acquisition time is known)
-- Classification of image volumes as with or without motion (based on the acceptable motion threshold from pixel size)
+- Classification of image volumes as with or without motion (based on the specified motion threshold)
 
 The motion-monitor will write all outputs and a log file (*.log) to an outputs sub-folder (./inputfilename_outputs/) 
 within the parent directory that is specified in the run bash script (see Run Instructions below).
