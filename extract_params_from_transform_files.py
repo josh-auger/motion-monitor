@@ -60,6 +60,9 @@ def get_data_from_transforms(directory_path):
             logging.error(e)
 
     # Transform files do not contain metadata (i.e. SMS factor or number of slices per volume), default value = 1
+    # Check for JSON file in directory_path
+    # IF *.JSON file exists, read JSON for sms_factor and nslice_per_vol
+    # ELSE, set sms_factor and nslices_per_vol to 1
     logging.info(f"\tNo scan metadata found. Defaulting to:")
     sms_factor = 1
     nslices_per_vol = 1
