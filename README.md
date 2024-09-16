@@ -36,7 +36,6 @@ motion-monitor access to read the files that are present.
 - Update the INPUT_DIR string to be the correct parent directory
 - Example: 
   - INPUT_DIR="/path/to/parent/directory/of/input/files/"
-  - Example log file and transform files are available at: https://drive.google.com/drive/folders/102-aBblHQNH2ILIRsIKksuJP7NvKp6BM?usp=sharing
 
 ### Set motion calculation variables
 Some user-specified values are required for calculating motion and can be altered as necessary in the run command bash 
