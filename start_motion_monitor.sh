@@ -12,7 +12,7 @@
 # sh start_motion_monitor.sh navigator_versor001.txt
 
 # Specify local parent directory and grab input file
-INPUT_DIR="/home/jauger/Radiology_Research/SLIMM_data/20231102_44828-004_scan_04/LogFiles/"
+INPUT_DIR="/path/to/log/files/or/directory/of/transforms/"
 INPUT_FILE=$1
 
 # Specify motion calculation variables (i.e. assumed head radius (mm), acceptable motion threshold (mm))
