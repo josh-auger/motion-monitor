@@ -1,5 +1,5 @@
 
-# Title: append-confounds-with-motion-monitor.py
+# Title: update-confounds-with-motion-monitor.py
 
 # Description:
 # Update the motion outlier columns in a confounds file (.tsv) to reflect the motion-flagged volumes from the
