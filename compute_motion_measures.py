@@ -58,10 +58,11 @@ def create_euler_transform(parameters, rotation_center):
 def compute_transform_pair_displacement(transform_list, rotation_center, radius):
     num_instances = len(transform_list)
     displacements = []
+    zero_parameters = [0] * len(transform_list[0])
 
     for i in range(num_instances):
         if i == 0:
-            parameters_previous = transform_list[i]
+            parameters_previous = zero_parameters
         else:
             parameters_previous = transform_list[i - 1]
 
@@ -423,7 +424,7 @@ if __name__ == "__main__":
     logging.info("")
     logging.info("Calculating motion measures from transform parameters...")
 
-    # ---------- USER-SPECIFIED VALUES ----------
+    # Read in remaining user-specified values
     try:
         radius = float(sys.argv[2])     # spherical head radius assumption (mm)
     except (IndexError, ValueError):
