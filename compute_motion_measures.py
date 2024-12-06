@@ -194,6 +194,12 @@ def create_output_file(input_filepath, new_filename_string="", file_extension=""
 
 
 def plot_parameters(extracted_numbers, input_filepath="", output_filename="", titles=None, y_labels=None, trans_thresh=0.75, radius=50):
+    """
+    IMPORTANT NOTE: This is plotting the six transform parameters exactly as they appear in the transform files/logs.
+    IF the transforms are of type Versor Rigid 3D, then the rotation parameters are the components of a 3D rotation versor (vector part of a unit quaternion).
+    IF the transforms are of type Euler 3D, then the rotation parameters are rigid 3D rotations in radians.
+    """
+
     indices_to_plot = [0,1,2,3,4,5]     # which parameters to plot (column indices)
     num_indices = len(indices_to_plot)
     fig, axes = plt.subplots(num_indices, 1, figsize=(8, 4 * num_indices))
