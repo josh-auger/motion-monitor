@@ -49,9 +49,46 @@ def get_rotation_center(transform_list):
     logging.info(f"Center of rotation : {rotation_center}")
     return rotation_center, transform_list
 
+# def create_euler_transform(parameters, rotation_center):
+#     euler_transform = sitk.Euler3DTransform()
+#     euler_transform.SetParameters(parameters)
+#     euler_transform.SetCenter(rotation_center)
+#     return euler_transform
 def create_euler_transform(parameters, rotation_center):
+    """ Convert Versor rigid 3D transform parameters into a Euler3DTransform. """
+    if len(parameters) != 6:
+        raise ValueError("Parameters must be a list or tuple of 6 elements.")
+
+    # Extract versor (rotation) and translation components
+    versor = parameters[:3]
+    translation = parameters[3:]
+
+    # Create a VersorTransform to interpret the versor
+    versor_transform = sitk.VersorRigid3DTransform()
+    versor_transform.SetParameters(parameters)
+    versor_transform.SetCenter(rotation_center)
+
+    # Extract Euler angles (in radians) from the VersorTransform
+    euler_angles = versor_transform.GetMatrix()
+    euler_angles = np.array(euler_angles).reshape(3, 3)  # Convert to 3x3 matrix
+
+    # Convert rotation matrix to Euler angles (ZYX convention)
+    sy = np.sqrt(euler_angles[0, 0] ** 2 + euler_angles[1, 0] ** 2)
+    singular = sy < 1e-6
+
+    if not singular:
+        x = np.arctan2(euler_angles[2, 1], euler_angles[2, 2])
+        y = np.arctan2(-euler_angles[2, 0], sy)
+        z = np.arctan2(euler_angles[1, 0], euler_angles[0, 0])
+    else:
+        x = np.arctan2(-euler_angles[1, 2], euler_angles[1, 1])
+        y = np.arctan2(-euler_angles[2, 0], sy)
+        z = 0
+
+    # Create the Euler3DTransform
     euler_transform = sitk.Euler3DTransform()
-    euler_transform.SetParameters(parameters)
+    euler_transform.SetRotation(x, y, z)  # Angles are in radians
+    euler_transform.SetTranslation(translation)
     euler_transform.SetCenter(rotation_center)
     return euler_transform
 
@@ -70,9 +107,15 @@ def compute_transform_pair_displacement(transform_list, rotation_center, radius)
         logging.info(f"\tPrior transform parameters : {parameters_previous}")
         logging.info(f"\tCurrent transform parameters : {parameters_i}")
 
+        # ASSUMPTION: the transform parameters are for a Versor Rigid 3D transform where the first 3 elements are the
+        # components of the versor representation of 3D rotation and the last 3 parameters defines the translation in
+        # each dimension.
+
+        # Convert Versor rigid 3D parameters into Euler transform objects for computing displacement
         transform_previous = create_euler_transform(parameters_previous, rotation_center)
         transform_i = create_euler_transform(parameters_i, rotation_center)
 
+        # Compute displacement from Euler transforms
         displacement_value = compute_displacement(transform_previous, transform_i, radius)
         displacements.append(displacement_value)
 
@@ -196,7 +239,8 @@ def create_output_file(input_filepath, new_filename_string="", file_extension=""
 def plot_parameters(extracted_numbers, input_filepath="", output_filename="", titles=None, y_labels=None, trans_thresh=0.75, radius=50):
     """
     IMPORTANT NOTE: This is plotting the six transform parameters exactly as they appear in the transform files/logs.
-    IF the transforms are of type Versor Rigid 3D, then the rotation parameters are the components of a 3D rotation versor (vector part of a unit quaternion).
+    IF the transforms are of type Versor Rigid 3D, then the rotation parameters are the components of a 3D rotation
+    versor (vector part of a unit quaternion).
     IF the transforms are of type Euler 3D, then the rotation parameters are rigid 3D rotations in radians.
     """
 
