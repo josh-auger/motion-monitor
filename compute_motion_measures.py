@@ -242,7 +242,7 @@ def create_output_file(input_filepath, new_filename_string="", file_extension=""
     return output_filepath
 
 
-def plot_parameters(extracted_numbers, input_filepath="", output_filename="", titles=None, y_labels=None, trans_thresh=0.75, radius=50):
+def plot_parameters(extracted_numbers, series_name="", output_filename="", titles=None, y_labels=None, trans_thresh=0.75, radius=50):
     """
     IMPORTANT NOTE!
     The motion-monitor assumes the three rotation parameters from the transform files/logs are in
@@ -256,6 +256,7 @@ def plot_parameters(extracted_numbers, input_filepath="", output_filename="", ti
     indices_to_plot = [0,1,2,3,4,5]     # which parameters to plot (column indices)
     fig, axes = plt.subplots(3, 2, figsize=(18,12))
     subplot_colors = ['b', 'g', 'r', 'c', 'm', 'y']  # Default colors for subsequent plots
+    fig.suptitle(f"motion parameters : {series_name}", y=0.98)
 
     for i, index in enumerate(indices_to_plot):
         row, col = divmod(i, 2) # Determine row and column of sub-plot to index
@@ -298,7 +299,7 @@ def plot_parameters(extracted_numbers, input_filepath="", output_filename="", ti
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
 
-def plot_parameter_distributions(transform_list, input_filepath="", output_filename="", offset_percent=0.03):
+def plot_parameter_distributions(transform_list, series_name="", output_filename="", offset_percent=0.03):
     x_rotation = []
     y_rotation = []
     z_rotation = []
@@ -351,7 +352,7 @@ def plot_parameter_distributions(transform_list, input_filepath="", output_filen
     plt.legend()
     plt.xlabel('mm/degrees')
     plt.ylabel('Normalized frequency')
-    plt.title('Distribution of motion parameters : ' + input_filepath)
+    plt.title('Distribution of motion parameters : ' + series_name)
     plt.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
 
     plt.savefig(output_filename)
@@ -360,7 +361,7 @@ def plot_parameter_distributions(transform_list, input_filepath="", output_filen
     plt.ion()
     plt.show(block=False)
 
-def plot_displacements(displacements, input_filepath="", output_filename="", threshold=None, total_volumes=None, volumes_above_threshold=None):
+def plot_displacements(displacements, series_name="", output_filename="", threshold=None, total_volumes=None, volumes_above_threshold=None):
     fig, axs = plt.subplots(1, 2, figsize=(15, 6), gridspec_kw={'width_ratios': [3.5, 1]})
 
     # Left subplot: displacement values per acquisition group
@@ -370,7 +371,7 @@ def plot_displacements(displacements, input_filepath="", output_filename="", thr
         axs[0].axhline(y=threshold, color='r', linestyle='--', linewidth=3, alpha=1.0,
                        label=f'Threshold = {threshold} mm')
 
-    axs[0].set_title('Displacement Tracking : ' + input_filepath)
+    axs[0].set_title('Displacement Tracking : ' + series_name)
     axs[0].set_xlabel('Acquisition Instance')
     axs[0].set_ylabel('Displacement (mm)')
     axs[0].legend(loc='upper left')
@@ -404,7 +405,7 @@ def plot_displacements(displacements, input_filepath="", output_filename="", thr
     plt.ion()
     plt.show(block=True)
 
-def plot_cumulative_displacement(cumulative_displacements, input_filepath="", output_filename="", threshold=None, total_volumes=None, volumes_above_threshold=None):
+def plot_cumulative_displacement(cumulative_displacements, series_name="", output_filename="", threshold=None, total_volumes=None, volumes_above_threshold=None):
     fig, ax = plt.subplots(figsize=(12, 6))
 
     # Plot cumulative displacement values per acquisition group
@@ -417,7 +418,7 @@ def plot_cumulative_displacement(cumulative_displacements, input_filepath="", ou
         ax.plot(x, y, color='r', linestyle='--', linewidth=1, alpha=1.0,
                 label=f'Acceptable Accumulation (slope = {threshold})')
 
-    ax.set_title('Cumulative Displacement Tracking : ' + input_filepath)
+    ax.set_title('Cumulative Displacement Tracking : ' + series_name)
     ax.set_xlabel('Acquisition Instance')
     ax.set_ylabel('Cumulative Displacement (mm)')
     ax.legend(loc='upper left')
@@ -476,10 +477,10 @@ if __name__ == "__main__":
     # Determine input type for pre-processing
     if os.path.isfile(input_filepath):
         if input_filepath.endswith(".log"):
-            transform_list, sms_factor, nslices_per_vol = get_data_from_slimm_log(input_filepath)
+            transform_list, sms_factor, nslices_per_vol, series_name = get_data_from_slimm_log(input_filepath)
         elif input_filepath.endswith(".txt") or input_filepath.endswith(".tfm"):
             directory_path = os.path.dirname(input_filepath)
-            transform_list, sms_factor, nslices_per_vol = get_data_from_transforms(directory_path)
+            transform_list, sms_factor, nslices_per_vol, series_name = get_data_from_transforms(directory_path)
         else:
             raise ValueError("Arrr! Unsupported file extension. Please provide a .log, .txt, or .tfm file as input.")
     else:
@@ -522,23 +523,23 @@ if __name__ == "__main__":
     # Plot transform parameters
     titles = ['X-axis Rotation', 'Y-axis Rotation', 'Z-axis Rotation', 'X-axis Translation', 'Y-axis Translation', 'Z-axis Translation']
     y_labels = ['X Rotation (deg)', 'Y Rotation (deg)', 'Z Rotation (deg)', 'X Translation (mm)', 'Y Translation (mm)', 'Z Translation (mm)']
-    params_filename = create_output_file(input_filepath, "parameters", "png", start_time)
-    plot_parameters(euler_transform_list, input_filepath, params_filename, titles, y_labels, threshold_value, radius)
-    params_dist_filename = create_output_file(input_filepath, "parameters_distribution", "png", start_time)
-    plot_parameter_distributions(euler_transform_list, input_filepath, params_dist_filename)
+    params_filename = create_output_file(input_filepath, f"{series_name}_parameters", "png", start_time)
+    plot_parameters(euler_transform_list, series_name, params_filename, titles, y_labels, threshold_value, radius)
+    params_dist_filename = create_output_file(input_filepath, f"{series_name}_parameters_distribution", "png", start_time)
+    plot_parameter_distributions(euler_transform_list, series_name, params_dist_filename)
 
     # Plot displacements
-    disp_filename = create_output_file(input_filepath, "displacements", "png", start_time)
-    plot_displacements(displacements, input_filepath, disp_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
+    disp_filename = create_output_file(input_filepath, f"{series_name}_displacements", "png", start_time)
+    plot_displacements(displacements, series_name, disp_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
     # Plot cumulative displacement over time
     cumulative_displacements = calculate_cumulative_displacement(displacements)
-    cum_disp_filename = create_output_file(input_filepath, "displacements_cumulative", "png", start_time)
-    plot_cumulative_displacement(cumulative_displacements, input_filepath, cum_disp_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
+    cum_disp_filename = create_output_file(input_filepath, f"{series_name}_displacements_cumulative", "png", start_time)
+    plot_cumulative_displacement(cumulative_displacements, series_name, cum_disp_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
     # Export table of motion data (.csv file)
     data_table, data_table_headers = construct_data_table(np.array(euler_transform_list), np.array(displacements), np.array(cumulative_displacements), np.array(volume_id), np.array(motion_flag))
-    csv_filename = create_output_file(input_filepath, "datatable", "csv", start_time)
+    csv_filename = create_output_file(input_filepath, f"{series_name}_datatable", "csv", start_time)
     export_values_csv(data_table, data_table_headers, csv_filename)
 
     logging.info("")

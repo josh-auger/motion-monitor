@@ -85,11 +85,13 @@ def get_data_from_transforms(directory_path):
         sms_factor = metadata['MultibandAccelerationFactor']
         slice_timings = metadata['SliceTiming']
         nslices_per_vol = len(slice_timings)
+        series_name = metadata['ProtocolName']
     except FileNotFoundError:
         logging.info(f"\tNo metadata file found in {directory_path}. Using default values.")
     except (json.JSONDecodeError, KeyError) as e:
         logging.error(f"Error parsing metadatafile: {e}. Using default values.")
 
+    logging.info(f"\tSeries name : {series_name}")
     logging.info(f"\tSMS factor = {sms_factor}")
     logging.info(f"\tNum slices per volume: {nslices_per_vol}")
     logging.info(f"\tNum acquisitions per volume: {int(nslices_per_vol / sms_factor)}")
@@ -100,7 +102,7 @@ def get_data_from_transforms(directory_path):
     elif len(transform_list) == 1:
         logging.info(f"\tOnly found one transform file: {transform_list[0]} in directory: {directory_path}.\nCheck input directory and try again.")
 
-    return transform_list, sms_factor, nslices_per_vol
+    return transform_list, sms_factor, nslices_per_vol, series_name
 
 
 if __name__ == "__main__":

@@ -64,6 +64,18 @@ def extract_numbers_from_lines(lines, number_search_pattern=r'\[(.*?)\]'):
 
 def get_data_from_slimm_log(log_filename):
     logging.info("Processing log file...")
+
+    series_name_list = find_lines_with_phrase(log_filename, "<protocolName>", "</protocolName>")
+    if series_name_list:  # Ensure the list is not empty
+        match = re.search(r'<protocolName>(.*?)</protocolName>', series_name_list[0])
+        if match:
+            series_name = match.group(1)  # Extract the content inside the tags
+        else:
+            series_name = None  # Handle cases where the pattern wasn't found
+    else:
+        series_name = None  # Handle case where no matching line was found
+    logging.info(f"\tSeries name : %s", series_name)
+
     # Extract multi-band (SMS) factor value
     sms_factor_line = find_lines_with_phrase(log_filename, "MultiBandFactor", "</value>")
     sms_factor, *_ = extract_numbers_from_lines(sms_factor_line[:1], r'<value>(.*?)<\/value>')
@@ -88,7 +100,7 @@ def get_data_from_slimm_log(log_filename):
     if len(transform_list) == 0:
         logging.info(f"\tERROR: No parameter sets found!")
 
-    return transform_list, sms_factor, nslices_per_vol
+    return transform_list, sms_factor, nslices_per_vol, series_name
 
 
 if __name__ == "__main__":
