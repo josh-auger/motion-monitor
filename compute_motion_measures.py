@@ -254,22 +254,19 @@ def plot_parameters(extracted_numbers, input_filepath="", output_filename="", ti
     """
 
     indices_to_plot = [0,1,2,3,4,5]     # which parameters to plot (column indices)
-    num_indices = len(indices_to_plot)
-    fig, axes = plt.subplots(num_indices, 1, figsize=(8, 4 * num_indices))
+    fig, axes = plt.subplots(3, 2, figsize=(18,12))
     subplot_colors = ['b', 'g', 'r', 'c', 'm', 'y']  # Default colors for subsequent plots
 
     for i, index in enumerate(indices_to_plot):
+        row, col = divmod(i, 2) # Determine row and column of sub-plot to index
+        ax = axes[row, col]
+
         numbers_to_plot = [numbers[index] for numbers in extracted_numbers]
         if i < 3:
             numbers_to_plot = np.degrees(numbers_to_plot)
 
-        if num_indices > 1:
-            ax = axes[i]
-        else:
-            ax = axes
-
         color = subplot_colors[i % len(subplot_colors)]  # Cycle through colors
-        ax.plot(numbers_to_plot, marker='o', linestyle='-', color=color, alpha=0.7)
+        ax.plot(numbers_to_plot, marker='o', linestyle='-', color=color, alpha=0.5)
 
         if titles is not None:
             ax.set_title(titles[i])
@@ -279,6 +276,7 @@ def plot_parameters(extracted_numbers, input_filepath="", output_filename="", ti
         ax.set_xlabel('Acquisition (slice timing) group')
         ax.set_ylabel(y_labels[i] if y_labels else f'Parameter {index + 1}')
         ax.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
+        ax.set_xlim(left=0) # Ensure x-axis starts at 0
 
         # Plot dashed lines for threshold values
         rot_thresh = np.degrees(trans_thresh / radius)  # Assume head radius = 50 mm
@@ -286,8 +284,7 @@ def plot_parameters(extracted_numbers, input_filepath="", output_filename="", ti
             ax.axhline(y=rot_thresh, color='r', linestyle='--', alpha=0.7, label=f'Rotation Threshold ({rot_thresh})')
             ax.axhline(y=-rot_thresh, color='r', linestyle='--', alpha=0.7)
         else:  # Translation parameters
-            ax.axhline(y=trans_thresh, color='r', linestyle='--', alpha=0.7,
-                       label=f'Translation Threshold ({trans_thresh})')
+            ax.axhline(y=trans_thresh, color='r', linestyle='--', alpha=0.7, label=f'Translation Threshold ({trans_thresh})')
             ax.axhline(y=-trans_thresh, color='r', linestyle='--', alpha=0.7)
 
         ax.relim()
