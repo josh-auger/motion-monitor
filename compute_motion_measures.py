@@ -49,11 +49,6 @@ def get_rotation_center(transform_list):
     logging.info(f"Center of rotation : {rotation_center}")
     return rotation_center, transform_list
 
-# def create_euler_transform(parameters, rotation_center):
-#     euler_transform = sitk.Euler3DTransform()
-#     euler_transform.SetParameters(parameters)
-#     euler_transform.SetCenter(rotation_center)
-#     return euler_transform
 def create_euler_transform(parameters, rotation_center):
     """ Convert Versor rigid 3D transform parameters into a Euler3DTransform. """
     if len(parameters) != 6:
@@ -95,6 +90,7 @@ def create_euler_transform(parameters, rotation_center):
 def compute_transform_pair_displacement(transform_list, rotation_center, radius):
     num_instances = len(transform_list)
     displacements = []
+    euler_transform_list = []
     zero_parameters = [0] * len(transform_list[0])
 
     for i in range(num_instances):
@@ -118,10 +114,11 @@ def compute_transform_pair_displacement(transform_list, rotation_center, radius)
         # Compute displacement from Euler transforms
         displacement_value = compute_displacement(transform_previous, transform_i, radius)
         displacements.append(displacement_value)
+        euler_transform_list.append(transform_i.GetParameters())
 
     logging.info("")
     logging.info(f"Number of displacement values : {len(displacements)}")
-    return displacements
+    return displacements, euler_transform_list
 
 def compute_displacement(transform1, transform2, radius=50, outputfile=None):
     A0 = np.asarray(transform2.GetMatrix()).reshape(3, 3)
@@ -178,7 +175,9 @@ def calculate_percent_diff(array1, array2):
 def check_volume_motion(displacements, sms_factor, num_slices_per_volume, threshold):
     # Calculate number of acquisitions per volume
     num_acquisitions_per_volume = int(num_slices_per_volume / sms_factor)
+    # num_acquisitions_per_volume = 1     # Workaround for VVR in SLIMM logs where 1 registration = 1 volume
     total_volumes = (len(displacements) / num_acquisitions_per_volume) + 1 # plus 1 for the initial reference volume
+
     volumes_above_threshold = 0
     volume_id = []
     motion_flag = []
@@ -251,34 +250,39 @@ def plot_parameters(extracted_numbers, input_filepath="", output_filename="", ti
 
     for i, index in enumerate(indices_to_plot):
         numbers_to_plot = [numbers[index] for numbers in extracted_numbers]
+        if i < 3:
+            numbers_to_plot = np.degrees(numbers_to_plot)
+
         if num_indices > 1:
             ax = axes[i]
         else:
             ax = axes
 
-        color = subplot_colors[i % len(subplot_colors)]  # Use modulo to cycle through colors
+        color = subplot_colors[i % len(subplot_colors)]  # Cycle through colors
         ax.plot(numbers_to_plot, marker='o', linestyle='-', color=color, alpha=0.7)
+
         if titles is not None:
             ax.set_title(titles[i])
         else:
             ax.set_title(f'{index + 1}-th parameter of each registration instance')
+
         ax.set_xlabel('Acquisition (slice timing) group')
-        if y_labels is not None:
-            ax.set_ylabel(y_labels[i])
-        else:
-            ax.set_ylabel(f'Parameter {index + 1}')
+        ax.set_ylabel(y_labels[i] if y_labels else f'Parameter {index + 1}')
         ax.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
 
         # Plot dashed lines for threshold values
-        rot_thresh = trans_thresh / radius # assume head radius = 50 mm
-        if rot_thresh is not None and i < 3:  # Check if rotation plot and threshold is specified
-            ax.axhline(y=rot_thresh, color='r', linestyle='--', alpha=0.7,
-                       label=f'Rotation Threshold ({rot_thresh})')
+        rot_thresh = np.degrees(trans_thresh / radius)  # Assume head radius = 50 mm
+        if i < 3:  # Rotation parameters
+            ax.axhline(y=rot_thresh, color='r', linestyle='--', alpha=0.7, label=f'Rotation Threshold ({rot_thresh})')
             ax.axhline(y=-rot_thresh, color='r', linestyle='--', alpha=0.7)
-        elif trans_thresh is not None and i >= 3:  # Check if translation plot and threshold is specified
+        else:  # Translation parameters
             ax.axhline(y=trans_thresh, color='r', linestyle='--', alpha=0.7,
                        label=f'Translation Threshold ({trans_thresh})')
             ax.axhline(y=-trans_thresh, color='r', linestyle='--', alpha=0.7)
+
+        ax.relim()
+        ax.autoscale_view()
+
     plt.tight_layout()
 
     plt.savefig(output_filename)
@@ -340,6 +344,7 @@ def plot_parameter_distributions(transform_list, input_filepath="", output_filen
     plt.xlabel('mm/degrees')
     plt.ylabel('Normalized frequency')
     plt.title('Distribution of motion parameters : ' + input_filepath)
+    plt.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
 
     plt.savefig(output_filename)
     logging.info(f"Parameters distribution plot saved as : {output_filename}")
@@ -478,13 +483,13 @@ if __name__ == "__main__":
     try:
         radius = float(sys.argv[2])     # spherical head radius assumption (mm)
     except (IndexError, ValueError):
-        print("Radius not specified or invalid. Used default value: 50 mm")
+        print("Radius not specified. Using default radius = 50 mm")
         radius = 50.0
 
     try:
         threshold_value = float(sys.argv[3])    # threshold of acceptable motion (mm)
     except (IndexError, ValueError):
-        print("Threshold value not specified or invalid. Used default value: 0.6 mm")
+        print("Threshold value not specified. Using default threshold_value = 0.6 mm")
         threshold_value = 0.6
 
     logging.info("")
@@ -495,7 +500,7 @@ if __name__ == "__main__":
 
     # Displacement between acquisitions
     rotation_center, transform_list = get_rotation_center(transform_list)
-    displacements = compute_transform_pair_displacement(transform_list, rotation_center, radius)
+    displacements, euler_transform_list = compute_transform_pair_displacement(transform_list, rotation_center, radius)
 
     # Cumulative displacement
     cumulative_disp = sum(displacements)
@@ -509,11 +514,11 @@ if __name__ == "__main__":
 
     # Plot transform parameters
     titles = ['X-axis Rotation', 'Y-axis Rotation', 'Z-axis Rotation', 'X-axis Translation', 'Y-axis Translation', 'Z-axis Translation']
-    y_labels = ['X Rotation (rad)', 'Y Rotation (rad)', 'Z Rotation (rad)', 'X Translation (mm)', 'Y Translation (mm)', 'Z Translation (mm)']
+    y_labels = ['X Rotation (deg)', 'Y Rotation (deg)', 'Z Rotation (deg)', 'X Translation (mm)', 'Y Translation (mm)', 'Z Translation (mm)']
     params_filename = create_output_file(input_filepath, "parameters", "png", start_time)
-    plot_parameters(transform_list, input_filepath, params_filename, titles, y_labels, threshold_value, radius)
+    plot_parameters(euler_transform_list, input_filepath, params_filename, titles, y_labels, threshold_value, radius)
     params_dist_filename = create_output_file(input_filepath, "parameters_distribution", "png", start_time)
-    plot_parameter_distributions(transform_list, input_filepath, params_dist_filename)
+    plot_parameter_distributions(euler_transform_list, input_filepath, params_dist_filename)
 
     # Plot displacements
     disp_filename = create_output_file(input_filepath, "displacements", "png", start_time)
@@ -525,7 +530,7 @@ if __name__ == "__main__":
     plot_cumulative_displacement(cumulative_displacements, input_filepath, cum_disp_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
 
     # Export table of motion data (.csv file)
-    data_table, data_table_headers = construct_data_table(np.array(transform_list), np.array(displacements), np.array(cumulative_displacements), np.array(volume_id), np.array(motion_flag))
+    data_table, data_table_headers = construct_data_table(np.array(euler_transform_list), np.array(displacements), np.array(cumulative_displacements), np.array(volume_id), np.array(motion_flag))
     csv_filename = create_output_file(input_filepath, "datatable", "csv", start_time)
     export_values_csv(data_table, data_table_headers, csv_filename)
 
