@@ -13,6 +13,7 @@
 import os
 import numpy as np
 import logging
+import json
 
 def parse_transform_file(file_path):
     with open(file_path, 'r') as file:
@@ -41,15 +42,25 @@ def get_ordered_filepaths(directory_path):
             file_path = os.path.join(directory_path, filename)
             filepaths.append(file_path)
     filepaths.sort()  # Order by filename
+
     return filepaths
+
+def look_for_metadata_file(directory_path):
+    metadatafiles = []
+    for filename in os.listdir(directory_path):
+        if filename.endswith(".json"):
+            metadatafiles.append(os.path.join(directory_path, filename))
+
+    if len(metadatafiles) == 0:
+        raise FileNotFoundError(f"No JSON metadata file found in {directory_path}!")
+    elif len(metadatafiles) > 1:
+        raise ValueError(f"Multiple JSON metadata files found in {directory_path}!")
+
+    return metadatafiles[0]
 
 def get_data_from_transforms(directory_path):
     logging.info("Processing list of transform files...")
     filepaths = get_ordered_filepaths(directory_path)
-    # # Print the sorted filepaths
-    # print("Sorted filepaths:")
-    # for filepath in filepaths:
-    #     print(filepath)
 
     transform_list = []
     for file_path in filepaths:
@@ -63,9 +74,22 @@ def get_data_from_transforms(directory_path):
     # Check for JSON file in directory_path
     # IF *.JSON file exists, read JSON for sms_factor and nslice_per_vol
     # ELSE, set sms_factor and nslices_per_vol to 1
-    logging.info(f"\tNo scan metadata found. Defaulting to:")
     sms_factor = 1
     nslices_per_vol = 1
+    try:
+        metadatafile = look_for_metadata_file(directory_path)
+        logging.info(f"\tFound metadatafile: {metadatafile}")
+        with open(metadatafile, 'r') as f:
+            metadata = json.load(f)
+
+        sms_factor = metadata['MultibandAccelerationFactor']
+        slice_timings = metadata['SliceTiming']
+        nslices_per_vol = len(slice_timings)
+    except FileNotFoundError:
+        logging.info(f"\tNo metadata file found in {directory_path}. Using default values.")
+    except (json.JSONDecodeError, KeyError) as e:
+        logging.error(f"Error parsing metadatafile: {e}. Using default values.")
+
     logging.info(f"\tSMS factor = {sms_factor}")
     logging.info(f"\tNum slices per volume: {nslices_per_vol}")
     logging.info(f"\tNum acquisitions per volume: {int(nslices_per_vol / sms_factor)}")
@@ -73,6 +97,8 @@ def get_data_from_transforms(directory_path):
     logging.info(f"Number of extracted parameter sets: {len(transform_list)}")
     if len(transform_list) == 0:
         logging.info(f"\tERROR: No parameter sets found!")
+    elif len(transform_list) == 1:
+        logging.info(f"\tOnly found one transform file: {transform_list[0]} in directory: {directory_path}.\nCheck input directory and try again.")
 
     return transform_list, sms_factor, nslices_per_vol
 

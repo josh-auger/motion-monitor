@@ -12,8 +12,7 @@
 # sh start_motion_monitor.sh Input_DIR transform_filename.txt
 
 # Specify local parent directory and grab input file
-#INPUT_DIR="/home/jauger/GitHubRepos/SLIMM/logs/"
-INPUT_DIR="/home/jauger/Radiology_Research/SLIMM_data/20250226_MRN71053673_Atlas_scan/71053673-motion_characterization/func-bold_task-footmotor_motion_analysis/"
+INPUT_DIR="/home/jauger/GitHubRepos/SLIMM/logs/"
 # INPUT_DIR=$1
 INPUT_FILE=$1
 # INPUT_FILE=$2
