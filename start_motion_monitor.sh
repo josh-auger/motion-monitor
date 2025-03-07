@@ -9,11 +9,14 @@
 # sh start_motion_monitor.sh slimm_2024-08-22_15.06.20.log
 #
 # Example run command for directory of transform files input
-# sh start_motion_monitor.sh navigator_versor001.txt
+# sh start_motion_monitor.sh Input_DIR transform_filename.txt
 
 # Specify local parent directory and grab input file
-INPUT_DIR="/path/to/log/files/or/directory/of/transforms/"
+#INPUT_DIR="/home/jauger/GitHubRepos/SLIMM/logs/"
+INPUT_DIR="/home/jauger/Radiology_Research/SLIMM_data/20250226_MRN71053673_Atlas_scan/71053673-motion_characterization/func-bold_task-footmotor_motion_analysis/"
+# INPUT_DIR=$1
 INPUT_FILE=$1
+# INPUT_FILE=$2
 
 # Specify motion calculation variables (i.e. assumed head radius (mm), acceptable motion threshold (mm))
 head_radius=50
@@ -24,6 +27,7 @@ motion_threshold=0.6
 
 docker run --rm \
   -v $INPUT_DIR:/data \
+  --user 1000:1000\
   jauger/motion-monitor:latest \
   $INPUT_FILE \
   $head_radius \
