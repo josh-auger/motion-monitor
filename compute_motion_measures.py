@@ -22,6 +22,7 @@ import pytz
 from compute_displacement import compute_displacement
 from extract_params_from_log import get_data_from_slimm_log
 from extract_params_from_transform_files import get_data_from_transforms
+from extract_params_from_transform_files import look_for_metadata_file
 
 def setup_logging(input_filepath, start_time):
     log_filename = create_output_file(input_filepath, f"motion_monitor", "log", start_time)
@@ -46,11 +47,16 @@ def get_rotation_center(transform_list):
             rotation_center = potential_rotation_center
             transform_list = [row[:-3] for row in transform_list]  # Remove rotation center columns
 
-    logging.info(f"Center of rotation : {rotation_center}")
+    logging.info("")
+    logging.info(f"\tCenter of rotation : {rotation_center}")
+    logging.info("")
     return rotation_center, transform_list
 
 def create_euler_transform(parameters, rotation_center):
-    """ Convert Versor rigid 3D transform parameters into a Euler3DTransform. """
+    """
+    Convert Versor rigid 3D transform parameters into a Euler3DTransform. The motion-monitor assumes that the
+    extracted transform parameters are for a Versor Rigid 3D transform, to be converted to Euler format.
+    """
     if len(parameters) != 6:
         raise ValueError("Parameters must be a list or tuple of 6 elements.")
 
@@ -176,7 +182,7 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
     # Calculate number of acquisitions per volume
     num_acquisitions_per_volume = int(num_slices_per_volume / sms_factor)
     # num_acquisitions_per_volume = 1     # Workaround for VVR in SLIMM logs where 1 registration = 1 volume
-    total_volumes = (len(displacements) / num_acquisitions_per_volume) + 1 # plus 1 for the initial reference volume
+    total_volumes = (len(displacements) / num_acquisitions_per_volume)
 
     volumes_above_threshold = 0
     volume_id = []
@@ -194,8 +200,9 @@ def check_volume_motion(displacements, sms_factor, num_slices_per_volume, thresh
 
     logging.info("")
     logging.info(f"Acceptable motion threshold (mm) :  {threshold}")
-    logging.info(f"Number of displacements above threshold : {sum(motion_flag)}")
-    logging.info(f"Total collected volumes (+ reference) : {total_volumes}")
+    logging.info(f"Number of displacement values above threshold : {sum(motion_flag)}")
+    logging.info("")
+    logging.info(f"Total registered volumes : {total_volumes}")
     logging.info(f"Volumes with motion : {volumes_above_threshold}")
     logging.info(f"Volumes without motion : {(total_volumes - volumes_above_threshold)}")
     return total_volumes, volumes_above_threshold, volume_id, motion_flag
@@ -237,10 +244,13 @@ def create_output_file(input_filepath, new_filename_string="", file_extension=""
 
 def plot_parameters(extracted_numbers, input_filepath="", output_filename="", titles=None, y_labels=None, trans_thresh=0.75, radius=50):
     """
-    IMPORTANT NOTE: This is plotting the six transform parameters exactly as they appear in the transform files/logs.
-    IF the transforms are of type Versor Rigid 3D, then the rotation parameters are the components of a 3D rotation
-    versor (vector part of a unit quaternion).
-    IF the transforms are of type Euler 3D, then the rotation parameters are rigid 3D rotations in radians.
+    IMPORTANT NOTE!
+    The motion-monitor assumes the three rotation parameters from the transform files/logs are in
+    radians and converts the rotations to degrees when reporting values. The transform parameters are otherwise
+    reported exactly as they appear in the provided parameter list.
+        IF the transforms are of type Versor Rigid 3D, then the rotation parameters are the components of a 3D rotation
+        versor (vector part of a unit quaternion) in radians.
+        IF the transforms are of type Euler 3D, then the rotation parameters are rigid 3D rotations in radians.
     """
 
     indices_to_plot = [0,1,2,3,4,5]     # which parameters to plot (column indices)
@@ -299,6 +309,7 @@ def plot_parameter_distributions(transform_list, input_filepath="", output_filen
     y_translation = []
     z_translation = []
 
+    # Rotation parameters are converted from radians to degrees
     for transform in transform_list:
         x_rotation.append(np.degrees(transform[0]))
         y_rotation.append(np.degrees(transform[1]))
@@ -451,11 +462,12 @@ def export_values_csv(data_table, data_table_headers, output_filename):
 
 if __name__ == "__main__":
     input_filename = sys.argv[1]
-    # Check if input_filename is just a filename and not a file path
+    # Check that input_filename is just a filename and NOT a file path
     if os.path.basename(input_filename) != input_filename:
         raise ValueError("Scurvy dogs, we messed up! \n"
         "The input argument should be a single filename (with .log, .txt, or .tfm extension) and NOT a file path. \n"
-        "Fix that blunder and give it another go, matey!")
+        "Also, double-check that the parent directory listed in the bash script is correct. \n"
+        "Fix this blunder and give it another go, matey!")
     input_filepath = "/data/" + input_filename
 
     start_time = datetime.datetime.now(pytz.utc).astimezone(pytz.timezone('US/Eastern')).strftime('%Y%m%d_%H%M%S')  # Default to Eastern timezone!
@@ -472,33 +484,31 @@ if __name__ == "__main__":
             directory_path = os.path.dirname(input_filepath)
             transform_list, sms_factor, nslices_per_vol = get_data_from_transforms(directory_path)
         else:
-            raise ValueError("Arrr! Unsupported file extension. Please provide a .log, .txt, or .tfm file.")
+            raise ValueError("Arrr! Unsupported file extension. Please provide a .log, .txt, or .tfm file as input.")
     else:
         raise ValueError("Arrr! The input path is not a valid file.")
-
-    logging.info("")
-    logging.info("Calculating motion measures from transform parameters...")
 
     # Read in remaining user-specified values
     try:
         radius = float(sys.argv[2])     # spherical head radius assumption (mm)
     except (IndexError, ValueError):
-        print("Radius not specified. Using default radius = 50 mm")
+        print("Radius not specified. Using default value.")
         radius = 50.0
 
     try:
         threshold_value = float(sys.argv[3])    # threshold of acceptable motion (mm)
     except (IndexError, ValueError):
-        print("Threshold value not specified. Using default threshold_value = 0.6 mm")
+        print("Threshold value not specified. Using default value.")
         threshold_value = 0.6
 
     logging.info("")
     logging.info(f"User-specified values:")
     logging.info(f"\tHead radius (mm) : {radius}")
     logging.info(f"\tMotion threshold (mm) : {threshold_value}")
-    logging.info("")
 
     # Displacement between acquisitions
+    logging.info("")
+    logging.info("Tally ho! Calculating motion measures from the acquired transform parameters...")
     rotation_center, transform_list = get_rotation_center(transform_list)
     displacements, euler_transform_list = compute_transform_pair_displacement(transform_list, rotation_center, radius)
 
