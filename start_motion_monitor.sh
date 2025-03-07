@@ -12,7 +12,7 @@
 # sh start_motion_monitor.sh Input_DIR transform_filename.txt
 
 # Specify local parent directory and grab input file
-INPUT_DIR="/home/jauger/GitHubRepos/SLIMM/logs/"
+INPUT_DIR="/path/to/log/files/or/directory/of/transforms/"
 # INPUT_DIR=$1
 INPUT_FILE=$1
 # INPUT_FILE=$2
