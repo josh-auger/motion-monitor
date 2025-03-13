@@ -449,44 +449,52 @@ def plot_motion_flags(volume_numbers, motion_flags, series_name, motion_flags_fi
     """
     # Dynamically set the figure size
     unique_volumes = np.unique(volume_numbers)
-    figure_width = min(30, len(unique_volumes) * 0.08)
-    plt.figure(figsize=(figure_width, 3))
+    figure_width = min(25, len(unique_volumes) * 0.08)
+    plt.figure(figsize=(figure_width, 4))
 
-    # Plot the scatter plot of motion_flags
+    # Scatter plot of all motion flags
     plt.scatter(range(len(motion_flags)), motion_flags, label=f"Motion flags ({len(motion_flags)})", color='blue', alpha=0.5, s=10)
 
-    # Step 2: Condense motion flags to per-volume level
+    # Condense motion flags to per-volume level
     slice_group_size = nslices_per_vol / sms_factor
     logging.info(f"unique volumes = {len(unique_volumes)}")
     logging.info(f"slice group size = {slice_group_size}")
 
-    # Initialize an array for the volume motion flags (1 if motion is detected, 0 otherwise)
     volume_motion_flag = np.zeros(len(unique_volumes))
     for i, vol in enumerate(unique_volumes):
         indices = np.where(volume_numbers == vol)[0]
         volume_motion_flag[i] = 1 if np.any(motion_flags[indices] == 1) else 0.05  # Flag motion or set baseline
 
-    # Step 3: Prepare bar chart
+    # Bar chart of per-volume motion flags
     bar_positions = [idx * slice_group_size for idx in range(len(unique_volumes))]  # Position bars by slice groups
     plt.bar(bar_positions, volume_motion_flag, width=slice_group_size, color='black', alpha=0.3,
-            edgecolor='black', linewidth=1, align='edge', label=f"Registered volumes ({len(unique_volumes)})")
+            edgecolor='black', linewidth=1, align='edge', label=f"Volumes ({len(unique_volumes)})")
 
-    # Step 4: Configure axis labels
+    # Report number of volumes flagged with motion in sub-title
+    flagged_volumes = np.sum(volume_motion_flag == 1)
+    subtitle = f"Total registered volumes: {len(unique_volumes)}, Volumes with motion: {flagged_volumes}"
+    plt.suptitle(subtitle, fontsize=10, x=0.5, y=0.83)  # Add subtitle with specific position
+
+    # Configure axis ticks and labels
     plt.ylabel(f"Motion Flag \n(threshold = {threshold_value} mm)")
     plt.yticks([0.05, 1], ["No Motion", "Motion"])  # Custom labels for motion flags
-    label_positions = [pos + slice_group_size / 2 for pos in bar_positions]  # Shift labels to the center
     plt.xlabel("Volume Number")
-    xaxis_labelnames = [str(int(vol)) for vol in unique_volumes]
-    plt.xticks(ticks=label_positions, labels=[label if i % 4 == 0 else '' for i, label in enumerate(xaxis_labelnames)], rotation=60, fontsize=8)
     plt.xlim(min(bar_positions) - slice_group_size, max(bar_positions) + slice_group_size)
-    plt.gca().tick_params(axis='x', which='major', pad=0)
+    plt.gca().tick_params(axis='x', which='minor', pad=0, length=3)
+    minor_tick_positions = [pos + slice_group_size / 2 for pos in bar_positions]  # Center of each bar
+    plt.gca().xaxis.set_minor_locator(plt.FixedLocator(minor_tick_positions))  # Minor ticks centered at every volume bar
+    plt.gca().tick_params(axis='x', which='major', pad=0, length=7)
+    major_tick_positions = [pos + slice_group_size / 2 for pos in bar_positions]  # Center of each bar
+    plt.gca().xaxis.set_major_locator(plt.FixedLocator(major_tick_positions[::4]))  # Major ticks every 4th volume
+    major_tick_labels = [str(int(vol)) for vol in unique_volumes]  # Corresponding volume numbers
+    plt.xticks(major_tick_positions[::4], major_tick_labels[::4], rotation=50, fontsize=10)  # Show every 4th label
 
-    # Step 6: Final plot settings
-    plt.title(f'Volume Motion Flags: {series_name}')
+    # Final plot settings
+    plt.title(f'Volume Motion Flags: {series_name}', fontsize=12, x=0.5, y=1.1)
     plt.legend(loc="upper left", framealpha=0.7)
-    plt.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.4)
+    plt.grid(True, which='both', linestyle='-', linewidth=0.5, color='gray', alpha=0.4)
+    plt.tight_layout()
 
-    # Save and show the plot
     plt.tight_layout()
     plt.savefig(motion_flags_filename)
     logging.info(f"Motion flags plot saved as: {motion_flags_filename}")
