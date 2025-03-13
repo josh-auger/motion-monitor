@@ -19,6 +19,8 @@ import numpy as np
 import logging
 import datetime
 import pytz
+from matplotlib.ticker import MultipleLocator
+
 from compute_displacement import compute_displacement
 from extract_params_from_log import get_data_from_slimm_log
 from extract_params_from_transform_files import get_data_from_transforms
@@ -445,12 +447,15 @@ def plot_motion_flags(volume_numbers, motion_flags, series_name, motion_flags_fi
         - Scatter plot shows each individual motion flag event
         - Bar chart denotes all slice groups within each volume, and if any slice group triggered a motion flag.
     """
-    # Step 1: Plot the scatter plot of motion_flags
-    plt.figure(figsize=(20, 4))
-    plt.scatter(range(len(motion_flags)), motion_flags, label=f"{len(motion_flags)} Motion flags", color='blue', alpha=0.5)
+    # Dynamically set the figure size
+    unique_volumes = np.unique(volume_numbers)
+    figure_width = min(30, len(unique_volumes) * 0.08)
+    plt.figure(figsize=(figure_width, 3))
+
+    # Plot the scatter plot of motion_flags
+    plt.scatter(range(len(motion_flags)), motion_flags, label=f"Motion flags ({len(motion_flags)})", color='blue', alpha=0.5, s=10)
 
     # Step 2: Condense motion flags to per-volume level
-    unique_volumes = np.unique(volume_numbers)
     slice_group_size = nslices_per_vol / sms_factor
     logging.info(f"unique volumes = {len(unique_volumes)}")
     logging.info(f"slice group size = {slice_group_size}")
@@ -463,26 +468,23 @@ def plot_motion_flags(volume_numbers, motion_flags, series_name, motion_flags_fi
 
     # Step 3: Prepare bar chart
     bar_positions = [idx * slice_group_size for idx in range(len(unique_volumes))]  # Position bars by slice groups
-    plt.bar(bar_positions, volume_motion_flag, width=slice_group_size, color='black', alpha=0.5,
-            edgecolor='black', linewidth=2, align='edge', label=f"{len(unique_volumes)} Registered volumes")
+    plt.bar(bar_positions, volume_motion_flag, width=slice_group_size, color='black', alpha=0.3,
+            edgecolor='black', linewidth=1, align='edge', label=f"Registered volumes ({len(unique_volumes)})")
 
-    # Step 4: Configure y-axis
+    # Step 4: Configure axis labels
     plt.ylabel(f"Motion Flag \n(threshold = {threshold_value} mm)")
     plt.yticks([0.05, 1], ["No Motion", "Motion"])  # Custom labels for motion flags
-
-    # Step 5: Configure x-axis labels **at the center of each bar**
     label_positions = [pos + slice_group_size / 2 for pos in bar_positions]  # Shift labels to the center
     plt.xlabel("Volume Number")
-    plt.xticks(label_positions, [str(int(vol)) for vol in unique_volumes], rotation=75, fontsize=8)  # Center labels
-
-    # Keep x-axis tight to plotted data
+    xaxis_labelnames = [str(int(vol)) for vol in unique_volumes]
+    plt.xticks(ticks=label_positions, labels=[label if i % 4 == 0 else '' for i, label in enumerate(xaxis_labelnames)], rotation=60, fontsize=8)
     plt.xlim(min(bar_positions) - slice_group_size, max(bar_positions) + slice_group_size)
+    plt.gca().tick_params(axis='x', which='major', pad=0)
 
     # Step 6: Final plot settings
     plt.title(f'Volume Motion Flags: {series_name}')
-
-    # Configure legend: Upper-left ("northwest") corner with a slightly opaque background
-    legend = plt.legend(loc="upper left", framealpha=0.7)
+    plt.legend(loc="upper left", framealpha=0.7)
+    plt.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.4)
 
     # Save and show the plot
     plt.tight_layout()
