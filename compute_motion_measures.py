@@ -439,6 +439,58 @@ def plot_cumulative_displacement(cumulative_displacements, series_name="", outpu
     plt.ion()
     plt.show(block=True)
 
+def plot_motion_flags(volume_numbers, motion_flags, series_name, motion_flags_filename, sms_factor, nslices_per_vol, threshold_value):
+    """
+    Plot the motion flags with an overlaid bar chart to group each volume.
+        - Scatter plot shows each individual motion flag event
+        - Bar chart denotes all slice groups within each volume, and if any slice group triggered a motion flag.
+    """
+    # Step 1: Plot the scatter plot of motion_flags
+    plt.figure(figsize=(20, 4))
+    plt.scatter(range(len(motion_flags)), motion_flags, label=f"{len(motion_flags)} Motion flags", color='blue', alpha=0.5)
+
+    # Step 2: Condense motion flags to per-volume level
+    unique_volumes = np.unique(volume_numbers)
+    slice_group_size = nslices_per_vol / sms_factor
+    logging.info(f"unique volumes = {len(unique_volumes)}")
+    logging.info(f"slice group size = {slice_group_size}")
+
+    # Initialize an array for the volume motion flags (1 if motion is detected, 0 otherwise)
+    volume_motion_flag = np.zeros(len(unique_volumes))
+    for i, vol in enumerate(unique_volumes):
+        indices = np.where(volume_numbers == vol)[0]
+        volume_motion_flag[i] = 1 if np.any(motion_flags[indices] == 1) else 0.05  # Flag motion or set baseline
+
+    # Step 3: Prepare bar chart
+    bar_positions = [idx * slice_group_size for idx in range(len(unique_volumes))]  # Position bars by slice groups
+    plt.bar(bar_positions, volume_motion_flag, width=slice_group_size, color='black', alpha=0.5,
+            edgecolor='black', linewidth=2, align='edge', label=f"{len(unique_volumes)} Registered volumes")
+
+    # Step 4: Configure y-axis
+    plt.ylabel(f"Motion Flag \n(threshold = {threshold_value} mm)")
+    plt.yticks([0.05, 1], ["No Motion", "Motion"])  # Custom labels for motion flags
+
+    # Step 5: Configure x-axis labels **at the center of each bar**
+    label_positions = [pos + slice_group_size / 2 for pos in bar_positions]  # Shift labels to the center
+    plt.xlabel("Volume Number")
+    plt.xticks(label_positions, [str(int(vol)) for vol in unique_volumes], rotation=75, fontsize=8)  # Center labels
+
+    # Keep x-axis tight to plotted data
+    plt.xlim(min(bar_positions) - slice_group_size, max(bar_positions) + slice_group_size)
+
+    # Step 6: Final plot settings
+    plt.title(f'Volume Motion Flags: {series_name}')
+
+    # Configure legend: Upper-left ("northwest") corner with a slightly opaque background
+    legend = plt.legend(loc="upper left", framealpha=0.7)
+
+    # Save and show the plot
+    plt.tight_layout()
+    plt.savefig(motion_flags_filename)
+    logging.info(f"Motion flags plot saved as: {motion_flags_filename}")
+    plt.ion()
+    plt.show(block=True)
+
 
 def construct_data_table(transform_list, displacements, cumulative_displacements, volume_ID, motion_flag):
     if len(transform_list) != len(displacements) or len(displacements) != len(volume_ID) or len(transform_list) != len(volume_ID) or len(displacements) != len(cumulative_displacements):
@@ -536,6 +588,10 @@ if __name__ == "__main__":
     cumulative_displacements = calculate_cumulative_displacement(displacements)
     cum_disp_filename = create_output_file(input_filepath, f"{series_name}_displacements_cumulative", "png", start_time)
     plot_cumulative_displacement(cumulative_displacements, series_name, cum_disp_filename, threshold=threshold_value, total_volumes=total_volumes, volumes_above_threshold=volumes_above_threshold)
+
+    # Plot per-volume binary motion flag
+    motion_flags_filename = create_output_file(input_filepath, f"{series_name}_motion_flags", "png", start_time)
+    plot_motion_flags((np.array(volume_id)[..., np.newaxis]), (np.array(motion_flag)[..., np.newaxis]), series_name, motion_flags_filename, sms_factor, nslices_per_vol, threshold_value)
 
     # Export table of motion data (.csv file)
     data_table, data_table_headers = construct_data_table(np.array(euler_transform_list), np.array(displacements), np.array(cumulative_displacements), np.array(volume_id), np.array(motion_flag))
