@@ -261,7 +261,8 @@ def plot_parameters(extracted_numbers, series_name="", output_filename="", title
     fig.suptitle(f"motion parameters : {series_name}", y=0.98)
 
     for i, index in enumerate(indices_to_plot):
-        row, col = divmod(i, 2) # Determine row and column of sub-plot to index
+        row = i % 3  # Three rows
+        col = 0 if i < 3 else 1  # Rotations in left column, Translations in right column
         ax = axes[row, col]
 
         numbers_to_plot = [numbers[index] for numbers in extracted_numbers]
