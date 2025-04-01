@@ -71,16 +71,27 @@ def calculate_tsnr(data, affine, output_path, verbose=False):
     tsnr_map[np.isinf(tsnr_map)] = np.nan  # Replace infinities with NaNs
     tsnr_map = np.nan_to_num(tsnr_map, nan=0)  # Replace NaNs with 0
     mean_tsnr = np.nanmean(tsnr_map)
+    std_tsnr = np.nanstd(tsnr_map)
 
-    # Save as NIfTI image and .mat file
-    tsnr_image = nifti.Nifti1Image(tsnr_map, affine)
-    save(tsnr_image, output_path + ".nii.gz")
-    savemat(output_path + ".mat", {'tsnr': tsnr_map})
+    # Save as NIfTI images
+    save(Nifti1Image(tsnr_map, affine), output_path + "_tsnr.nii.gz")
+    save(Nifti1Image(mean_data, affine), output_path + "_mean_signal.nii.gz")
+    save(Nifti1Image(std_data, affine), output_path + "_stddev_signal.nii.gz")
+
+    # Save as .mat files
+    savemat(output_path + "_tsnr.mat", {'tsnr': tsnr_map})
+    savemat(output_path + "_mean_signal.mat", {'mean': mean_data})
+    savemat(output_path + "_std_signal.mat", {'std': std_data})
 
     if verbose:
-        print(f"tSNR image saved: {output_path}.nii.gz")
-        print(f"tSNR values saved: {output_path}.mat")
+        print(f"tSNR image saved: {output_path}_tsnr.nii.gz")
+        print(f"Mean signal image saved: {output_path}_mean.nii.gz")
+        print(f"Standard deviation image saved: {output_path}_std.nii.gz")
+        print(f"tSNR values saved: {output_path}_tsnr.mat")
+        print(f"Mean signal values saved: {output_path}_mean.mat")
+        print(f"Standard deviation values saved: {output_path}_std.mat")
         print(f"Mean tSNR: {mean_tsnr}")
+        print(f"Std-dev tSNR: {std_tsnr:.4f}")
 
     return mean_tsnr
 
