@@ -17,11 +17,9 @@ import sys
 from glob import glob
 from tqdm import tqdm
 import numpy as np
-from numpy import nanmean
 import matplotlib.pyplot as plt
 from scipy.io import savemat
-from nibabel import load, save
-import nibabel.nifti1 as nifti
+from nibabel import load, save, Nifti1Image
 import argparse
 
 def usage():
@@ -85,12 +83,12 @@ def calculate_tsnr(data, affine, output_path, verbose=False):
 
     if verbose:
         print(f"tSNR image saved: {output_path}_tsnr.nii.gz")
-        print(f"Mean signal image saved: {output_path}_mean.nii.gz")
-        print(f"Standard deviation image saved: {output_path}_std.nii.gz")
+        print(f"Mean signal image saved: {output_path}_mean_signal.nii.gz")
+        print(f"Standard deviation image saved: {output_path}_stddev_signal.nii.gz")
         print(f"tSNR values saved: {output_path}_tsnr.mat")
-        print(f"Mean signal values saved: {output_path}_mean.mat")
-        print(f"Standard deviation values saved: {output_path}_std.mat")
-        print(f"Mean tSNR: {mean_tsnr}")
+        print(f"Mean signal values saved: {output_path}_mean_signal.mat")
+        print(f"Standard deviation values saved: {output_path}_stddev_signal.mat")
+        print(f"\nMean tSNR: {mean_tsnr}")
         print(f"Std-dev tSNR: {std_tsnr:.4f}")
 
     return mean_tsnr
@@ -126,7 +124,7 @@ def process_nifti_files(input_path, concatenate, plot, verbose):
 
         combined_data = np.stack(data_list, axis=-1)
         print(f"Concatenated data shape : {combined_data.shape}")
-        output_file = os.path.join(tsnr_path, "mean_tsnr")
+        output_file = os.path.join(tsnr_path, "concatenated")
         snr_values.append(calculate_tsnr(combined_data, affine, output_file, verbose))
         print(f"Concatenated mean tSNR : {snr_values[0]}")
 
@@ -139,7 +137,7 @@ def process_nifti_files(input_path, concatenate, plot, verbose):
             if verbose:
                 print(f"Processing {fname} with shape {data.shape}")
 
-            output_file = os.path.join(tsnr_path, f"{fname}_tsnr")
+            output_file = os.path.join(tsnr_path, f"{fname}")
             snr_values.append(calculate_tsnr(data, affine, output_file, verbose))
 
     if plot:
