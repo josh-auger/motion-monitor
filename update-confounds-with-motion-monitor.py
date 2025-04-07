@@ -23,9 +23,11 @@ def condense_motion_flags(motion_df):
     """
     condensed_motion_df = motion_df.groupby('Volume_number')['Motion_flag'].max().reset_index()
 
-    # Add an initial entry for the reference volume (Volume_number = 0, Motion_flag = 0)
-    initial_entry = pd.DataFrame({'Volume_number': [0], 'Motion_flag': [0]})
-    condensed_motion_df = pd.concat([initial_entry, condensed_motion_df], ignore_index=True)
+    # Add initial 0 entry for reference volume (Volume_number = 0, Motion_flag = 0), ONLY IF ref vol was not included in registration!
+    # This would be the case for SLIMM logs where the reference volume is not registered with itself
+    # Nick's "brute force motion char" script already
+    # initial_entry = pd.DataFrame({'Volume_number': [0], 'Motion_flag': [0]})
+    # condensed_motion_df = pd.concat([initial_entry, condensed_motion_df], ignore_index=True)
 
     print("Condensed motion dataframe:")
     print(condensed_motion_df)
@@ -101,17 +103,26 @@ def main():
     # Step 2: condense slicewise motion flags to volume motion flags
     condensed_motion_df = condense_motion_flags(motion_df)
     total_volumes = len(condensed_motion_df['Volume_number'].unique())
-    print(f"Total number of volumes: {total_volumes}")
-
-    # Step 3: create separate column motion flag per volume
-    motion_flag_matrix = create_motion_flag_matrix(condensed_motion_df, total_volumes)
+    print(f"Total number of volumes from motion-monitor : {total_volumes}")
 
     # Check that num rows in motion_flag_matrix == num rows in confounds dataframe
+    # Account for potential missing reference volume in the motion-monitor
+    # This is usually the case when processing SLIMM logs vs Nick's "brute force" retrospective motion_char_full.py
+    if (total_volumes + 1) == condensed_motion_df.shape[0]:
+        print(f"Volume count MISMATCH : motion-monitor [{total_volumes}] vs. confounds file [{confounds_df.shape[0]}].")
+        print(f"Motion-monitor is likely missing the initial reference volume. Adding an initial zero-motion entry.")
+        initial_entry = pd.DataFrame({'Volume_number': [0], 'Motion_flag': [0]})
+        condensed_motion_df = pd.concat([initial_entry, condensed_motion_df], ignore_index=True)
+        total_volumes = len(condensed_motion_df['Volume_number'].unique())
+
+    # Now double-check that the number of volumes from the motion-monitor and confounds file match!
     if total_volumes != confounds_df.shape[0]:
-        raise ValueError(f"Volume count mismatch! Motion monitor data table contains {total_volumes} volumes, "
-                         f"while confounds file contains {confounds_df.shape[0]} volumes.")
+        raise ValueError(f"Volume count MISMATCH : motion-monitor [{total_volumes}] vs. confounds file [{confounds_df.shape[0]}].")
     else:
-        print("Volume count matches between motion-monitor and confounds file.")
+        print(f"Volume counts match : motion-monitor [{total_volumes}], confounds file [{confounds_df.shape[0]}].")
+
+    # Step 3: create motion flag matrix formatted for confounds file, separate binary column array for each volume motion flag
+    motion_flag_matrix = create_motion_flag_matrix(condensed_motion_df, total_volumes)
 
     # Step 4: update confounds file with new motion outlier columns
     # Remove preexisting 'motion_outlier' columns from the confounds file and print the count
