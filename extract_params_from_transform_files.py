@@ -76,6 +76,7 @@ def get_data_from_transforms(directory_path):
     # ELSE, set sms_factor and nslices_per_vol to 1
     sms_factor = 1
     nslices_per_vol = 1
+    series_name = "defaultSeriesName"
     try:
         metadatafile = look_for_metadata_file(directory_path)
         logging.info(f"\tFound metadatafile: {metadatafile}")
