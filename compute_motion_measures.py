@@ -302,6 +302,60 @@ def plot_parameters(extracted_numbers, series_name="", output_filename="", title
     plt.ion()
     plt.show(block=False)   # plt.show() is otherwise a blocking function pausing code execution until fig is closed
 
+
+def plot_parameters_combined(extracted_numbers, series_name="", output_filename="", titles=None, y_labels=None, trans_thresh=0.75, radius=50):
+    """
+    Plot combined motion parameters with rotations (x, y, z) on one subplot and translations (x, y, z) on another.
+    Rotations are converted from radians to degrees.
+    """
+
+    fig, axes = plt.subplots(1, 2, figsize=(18, 6))
+    subplot_colors = ['b', 'g', 'r']  # x, y, z colors
+    fig.suptitle(f"motion parameters (combined) : {series_name}", y=0.98)
+
+    # Extract parameter arrays for each axis
+    param_array = np.array(extracted_numbers)
+    rotations = np.degrees(param_array[:, 0:3])  # First three are rotations
+    translations = param_array[:, 3:6]           # Next three are translations
+
+    # Rotation plot
+    ax_rot = axes[0]
+    for i, label in enumerate(['X', 'Y', 'Z']):
+        ax_rot.plot(rotations[:, i], marker='o', linestyle='-', color=subplot_colors[i],
+                    alpha=0.6, label=f'{label}-axis')
+    ax_rot.set_title('Rotation Parameters')
+    ax_rot.set_xlabel('Acquisition (slice timing) group')
+    ax_rot.set_ylabel('Rotation (degrees)')
+    ax_rot.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
+    ax_rot.set_xlim(left=0)
+    rot_thresh = np.degrees(trans_thresh / radius)
+    ax_rot.axhline(y=rot_thresh, color='r', linestyle='--', alpha=0.7,
+                   label=f'Rotation Threshold ({rot_thresh:.3f}°)')
+    ax_rot.axhline(y=-rot_thresh, color='r', linestyle='--', alpha=0.7)
+    ax_rot.legend()
+
+    # Translation plot
+    ax_trans = axes[1]
+    for i, label in enumerate(['X', 'Y', 'Z']):
+        ax_trans.plot(translations[:, i], marker='o', linestyle='-', color=subplot_colors[i],
+                      alpha=0.6, label=f'{label}-axis')
+    ax_trans.set_title('Translation Parameters')
+    ax_trans.set_xlabel('Acquisition (slice timing) group')
+    ax_trans.set_ylabel('Translation (mm)')
+    ax_trans.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
+    ax_trans.set_xlim(left=0)
+    ax_trans.axhline(y=trans_thresh, color='r', linestyle='--', alpha=0.7,
+                     label=f'Translation Threshold ({trans_thresh:.3f} mm)')
+    ax_trans.axhline(y=-trans_thresh, color='r', linestyle='--', alpha=0.7)
+    ax_trans.legend()
+
+    plt.tight_layout()
+    plt.savefig(output_filename)
+    logging.info(f"Combined parameters plot saved as : {output_filename}")
+    plt.ion()
+    plt.show(block=False)
+
+
 def plot_parameter_distributions(transform_list, series_name="", output_filename="", offset_percent=0.03):
     x_rotation = []
     y_rotation = []
@@ -588,6 +642,8 @@ if __name__ == "__main__":
     y_labels = ['X Rotation (deg)', 'Y Rotation (deg)', 'Z Rotation (deg)', 'X Translation (mm)', 'Y Translation (mm)', 'Z Translation (mm)']
     params_filename = create_output_file(input_filepath, f"{series_name}_parameters", "png", start_time)
     plot_parameters(euler_transform_list, series_name, params_filename, titles, y_labels, threshold_value, radius)
+    params_combined_filename = create_output_file(input_filepath, f"{series_name}_parameters_combined", "png", start_time)
+    plot_parameters_combined(euler_transform_list, series_name, params_combined_filename, titles, y_labels, threshold_value, radius)
     params_dist_filename = create_output_file(input_filepath, f"{series_name}_parameters_distribution", "png", start_time)
     plot_parameter_distributions(euler_transform_list, series_name, params_dist_filename)
 
