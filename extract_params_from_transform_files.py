@@ -38,7 +38,7 @@ def parse_transform_file(file_path):
 def get_ordered_filepaths(directory_path):
     filepaths = []
     for filename in os.listdir(directory_path):
-        if filename.endswith(".txt") or filename.endswith(".tfm"):
+        if filename.endswith(".tfm"):
             file_path = os.path.join(directory_path, filename)
             filepaths.append(file_path)
     filepaths.sort()  # Order by filename
@@ -79,18 +79,26 @@ def get_data_from_transforms(directory_path):
     series_name = "defaultSeriesName"
     try:
         metadatafile = look_for_metadata_file(directory_path)
-        logging.info(f"\tFound metadatafile: {metadatafile}")
+        logging.info(f"\tFound JSON metadatafile: {metadatafile}")
         with open(metadatafile, 'r') as f:
             metadata = json.load(f)
 
-        sms_factor = metadata['MultibandAccelerationFactor']
-        slice_timings = metadata['SliceTiming']
+        slice_timing_dict = metadata['SliceTiming']
+        slice_timings = [slice_timing_dict[str(i)] if str(i) in slice_timing_dict else slice_timing_dict[i]
+                        for i in sorted(map(int, slice_timing_dict.keys()))]
+
         nslices_per_vol = len(slice_timings)
-        series_name = metadata['ProtocolName']
+
+        # sms_factor = metadata['MultibandAccelerationFactor']  # JDA: sms field in metadata json from enhanced DICOMs
+        sms_factor = metadata['userParameters']['userParameterLong'][4]['value']    # JDA: sms field in metadata json during live PMC
+        # sms_factor = nslices_per_vol / len(np.unique(slice_timings))  # JDA: alternative sms calculation from slice timings
+
+        # series_name = metadata['ProtocolName']    # JDA: for parsing metadata json from enhanced DICOMs
+        series_name = metadata['measurementInformation']['protocolName']    # JDA: for parsing metadata json during live PMC
     except FileNotFoundError:
         logging.info(f"\tNo metadata file found in {directory_path}. Using default values.")
     except (json.JSONDecodeError, KeyError) as e:
-        logging.error(f"Error parsing metadatafile: {e}. Using default values.")
+        logging.error(f"Error parsing metadatafile: {e}. Using default value(s).")
 
     logging.info(f"\tSeries name : {series_name}")
     logging.info(f"\tSMS factor = {sms_factor}")
