@@ -15,16 +15,18 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install SimpleITK numpy matplotlib pytz
+RUN pip3 install SimpleITK numpy matplotlib pytz pandas matplotlib
 
 # Copy the Python scripts into the container
-COPY extract_params_from_log.py             /app/extract_params_from_log.py
-COPY extract_params_from_transform_files.py /app/extract_params_from_transform_files.py
-COPY compute_motion_measures.py             /app/compute_motion_measures.py
-COPY compute_displacement.py                /app/compute_displacement.py
+COPY extract_params_from_log.py             /app/
+COPY extract_params_from_transform_files.py /app/
+COPY compute_motion_measures.py             /app/
+COPY compute_displacement.py                /app/
+COPY generate_motion_plots.py               /app/
+COPY monitor_directory.py                   /app/
 
 # Set the working directory inside the container
-WORKDIR /data
+WORKDIR /working
 
 # Set the entry point for the container to run the Python script with command-line arguments
-ENTRYPOINT ["python3", "/app/compute_motion_measures.py"]
+CMD python3 /app/monitor_directory.py /working/ --radius=$HEAD_RADIUS --threshold=$MOTION_THRESH
