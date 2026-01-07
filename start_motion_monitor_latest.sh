@@ -12,20 +12,22 @@
 # sh start_motion_monitor.sh Input_DIR transform_filename.txt
 
 # Specify local parent directory and grab input file
-#INPUT_DIR="/path/to/log/files/or/directory/of/transforms/"
-#INPUT_DIR="/home/jauger/GitHubRepos/python-fire-server-jauger/received_data/savedData_20251230T153705_func-bold_task-adt_run-01_slimmon/"
-INPUT_DIR=$1
+INPUT_DIR="/home/jauger/Radiology_Research/Scan_data/20250131_MRN6077271_Atlas_scan/6077271_20250131_rerunRetroSVR_20260107/fromNickBruteForce_retroSVR_20250131/func-bold_task-rest480_retroSVR_singlePairUpdates_alignTransforms/"
+# INPUT_DIR=$1
+INPUT_FILE=$1
+# INPUT_FILE=$2
 
 # Specify motion calculation variables (i.e. assumed head radius (mm), acceptable motion threshold (mm))
 head_radius=50
-motion_threshold=0.6
+motion_threshold=0.3    # Alyssa's group typically uses a strict motion threshold = 0.3 mm
 
 # Build the Docker image, if it does not yet exist
 #docker build -t jauger/motion-monitor .
 
-docker run --rm -it \
-  -u $(id -u):$(id -g) \
-  -v $INPUT_DIR:/working \
-  -e HEAD_RADIUS=$head_radius \
-  -e MOTION_THRESH=$motion_threshold \
-  jauger/motion-monitor:dev \
+docker run --rm \
+  -v $INPUT_DIR:/data \
+  --user 1000:1000\
+  jauger/motion-monitor:latest \
+  $INPUT_FILE \
+  $head_radius \
+  $motion_threshold
