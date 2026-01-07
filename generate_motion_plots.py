@@ -62,11 +62,11 @@ def plot_parameters_combined(motion_df, output_filename="", trans_thresh=0.60, r
     ax_rot.set_ylabel('Rotation (deg)')
     ax_rot.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
     ax_rot.set_xlim(left=0)
-    rot_thresh = np.degrees(trans_thresh / radius)
-    ax_rot.axhline(y=rot_thresh, color='r', linestyle='--', alpha=0.7,
-                   label=f'Rot Threshold = {rot_thresh:.3f}°')
-    ax_rot.axhline(y=-rot_thresh, color='r', linestyle='--', alpha=0.7)
-    ax_rot.legend()
+    # rot_thresh = np.degrees(trans_thresh / radius)
+    # ax_rot.axhline(y=rot_thresh, color='r', linestyle='--', alpha=0.7,
+    #                label=f'Rot Threshold = {rot_thresh:.3f}°')
+    # ax_rot.axhline(y=-rot_thresh, color='r', linestyle='--', alpha=0.7)
+    ax_rot.legend(loc='upper left')
 
     # Translation plot
     ax_trans = axes[1]
@@ -78,10 +78,10 @@ def plot_parameters_combined(motion_df, output_filename="", trans_thresh=0.60, r
     ax_trans.set_ylabel('Translation (mm)')
     ax_trans.grid(True, linestyle='-', linewidth=0.5, color='gray', alpha=0.5)
     ax_trans.set_xlim(left=0)
-    ax_trans.axhline(y=trans_thresh, color='r', linestyle='--', alpha=0.7,
-                     label=f'Trans Threshold = {trans_thresh:.3f} mm')
-    ax_trans.axhline(y=-trans_thresh, color='r', linestyle='--', alpha=0.7)
-    ax_trans.legend()
+    # ax_trans.axhline(y=trans_thresh, color='r', linestyle='--', alpha=0.7,
+    #                  label=f'Trans Threshold = {trans_thresh:.3f} mm')
+    # ax_trans.axhline(y=-trans_thresh, color='r', linestyle='--', alpha=0.7)
+    ax_trans.legend(loc='upper left')
 
     plt.tight_layout()
     plt.savefig(output_filename)
@@ -99,23 +99,21 @@ def plot_displacements(motion_df, output_filename="", threshold=None):
 
     axs[0].plot(displacements, marker='o', alpha=0.7, label="Framewise displacement")
     if threshold is not None:
-        axs[0].axhline(threshold, color='r', linestyle='--', label="Threshold")
+        axs[0].axhline(threshold, color='r', linestyle='--', label=f"Threshold = {threshold} mm")
 
     text = (
-        f"Acquisitions: {len(displacements)}\n"
+        f"Number of acquisitions: {len(displacements)}\n"
         f"Cumulative displacement (mm): {cumulative[-1]:.3f}\n"
-        f"Volumes with motion: {motion_flags.sum()}\n"
-        f"Volumes without motion: {len(motion_flags) - motion_flags.sum()}"
+        f"Motion corrupt volumes: {motion_flags.sum()}\n"
+        f"Motion-free volumes: {len(motion_flags) - motion_flags.sum()}"
     )
 
-    axs[0].text(0.5, 0.9, text, transform=axs[0].transAxes,
-                ha='center', va='center',
-                bbox=dict(facecolor='white', alpha=0.7))
+    axs[0].text(0.5, 0.9, text, transform=axs[0].transAxes, ha='center', va='center', bbox=dict(facecolor='white', alpha=0.7))
 
     axs[0].set_title("Framewise Displacements")
-    axs[0].set_xlabel("Acquisition Index")
+    axs[0].set_xlabel("Index")
     axs[0].set_ylabel("Displacement (mm)")
-    axs[0].legend()
+    axs[0].legend(loc='upper left')
     axs[0].grid(True)
 
     axs[1].boxplot(displacements, vert=True)
@@ -140,7 +138,7 @@ def plot_cumulative_displacement(motion_df, output_filename="", threshold=None):
     ax.set_title(f"Cumulative Displacement")
     ax.set_xlabel("Acquisition Instance")
     ax.set_ylabel("Cumulative Displacement (mm)")
-    ax.legend()
+    ax.legend(loc='upper left')
     ax.grid(True)
 
     plt.tight_layout()
