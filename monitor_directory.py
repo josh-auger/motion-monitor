@@ -10,8 +10,10 @@
 # Created by: Joshua Auger (joshua.auger@childrens.harvard.edu), Computational Radiology Lab, Boston Children's Hospital
 
 import os
+import re
 import sys
 import csv
+import glob
 import time
 import logging
 import argparse
@@ -114,6 +116,8 @@ def motion_table_to_dataframe(motion_table):
         "X_translation(mm)", "Y_translation(mm)", "Z_translation(mm)",
         "Displacement(mm)",
         "Cumulative_displacement(mm)",
+        "Volume_index",
+        "Slice_group_index",
         "Motion_flag",
     ]
     return df[column_order]
@@ -178,6 +182,7 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
             "metadata_filepath": None,
             "itemcount": 0,
             "volcount": 0,
+            "groupcount": 0,
             "prior_transform": None,
             "seen_files": set(),
             "previous_filesize": 0,
@@ -188,7 +193,9 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
             "sms_factor": 0,
             "motion_table": [],
             "cumulative_displacement": 0.0,
-            "motion_flag_count": 0
+            "motion_flag_count": 0,
+            "volume_motion_flag": 0,
+            "volume_motion_count": 0
         }
     state = reset_variables()
 
@@ -302,6 +309,10 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
         framewise_displacement = calculate_displacement(combined_transform, head_radius)
         motion_flag = 1 if framewise_displacement > motion_threshold else 0
 
+        if motion_flag == 1 and state["volume_motion_flag"] == 0:   # only raise volume motion flag once per volume
+            state["volume_motion_flag"] = 1
+            state["volume_motion_count"] += 1
+
         state["motion_flag_count"] += motion_flag
         state["cumulative_displacement"] += framewise_displacement
 
@@ -315,6 +326,8 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
             "Z_translation(mm)": current_params[5],
             "Displacement(mm)": framewise_displacement,
             "Cumulative_displacement(mm)": state["cumulative_displacement"],
+            "Volume_index": state["volcount"],
+            "Slice_group_index": state["groupcount"],
             "Motion_flag": motion_flag
         }
         state["motion_table"].append(row)
@@ -322,14 +335,18 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
         def format_params(params, precision=4):
             return "(" + ", ".join(f"{p:.{precision}g}" for p in params) + ")"
 
+        logging.info(f"Prior Euler parameters ({state['itemcount'] - 1:04d}) : {format_params(prior_params, 4)}")
+        logging.info(f"Current Euler parameters ({state['itemcount']:04d}) : {format_params(current_params, 4)}")
+        logging.info(f"Framewise displacement (mm) : {framewise_displacement:04f}")
         logging.info(f"=================================")
         logging.info(f"===== MOTION SUMMARY : {state['itemcount']:04d} =====")
-        logging.info(f"\tPrior parameters (Euler) : {format_params(prior_params, 4)}")
-        logging.info(f"\tCurrent parameters (Euler) : {format_params(current_params, 4)}")
-        logging.info(f"\tFramewise displacement (mm) : {framewise_displacement:04f}")
         logging.info(f"\tCumulative displacement (mm) : {state['cumulative_displacement']:04f}")
         logging.info(f"\tCumulative motion flags : {state['motion_flag_count']}")
+        logging.info(f"\tCurrent volume count : {state['volcount']} (slice group {state['groupcount']})")
+        logging.info(f"\tMotion-free volumes : {(state['volcount'] - state['volume_motion_count'])}")
+        logging.info(f"\tVolumes with motion : {state['volume_motion_count']}")
         logging.info(f"=================================")
+        return
 
         if state["itemcount"] % (10 * state["ngroups"]) == 0:
             motion_df = motion_table_to_dataframe(state["motion_table"])
@@ -385,13 +402,15 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
         export_motion_table_csv(output_dir=input_dir)
 
         # Reset all state
+        # temp_seen = state["seen_files"]
         nonlocal_state = reset_variables()
         state.update(nonlocal_state)
+        # state["seen_files"] = temp_seen     # DEV: re-assign all seen files to prevent repeat processing, for now
         logging.info("\n\n---- Motion-monitor reset ----")
-        reset_logging()
+        return
 
-
-    # Main monitoring loop
+    # =====================================================================
+    # MAIN MONITOR LOOP
     # =====================================================================
     while True:
         new_files = list_new_files()
@@ -400,15 +419,14 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
             continue
 
         if new_files:
-            logging.info(f"Found {len(new_files)} new file(s) to process")
-
-            # Start timer
+            # Start timer of new session
             if state["begintime"] is None:
+                reset_logging()
                 state["begintime"] = time.time()
                 logging.info(f"Started monitoring at : {datetime.now()}")
 
             # Process each new file
-            # -------------------------------------------
+            logging.info(f"Found {len(new_files)} new file(s) to process")
             for fname in new_files:
                 new_filepath = os.path.join(input_dir, fname)
                 ext = os.path.splitext(fname)[1]
