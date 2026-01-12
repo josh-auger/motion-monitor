@@ -162,26 +162,15 @@ def convert_versor_to_euler(transform):
     return euler_transform
 
 
-def get_slice_timings_from_metadata(json_filepath):
-    """Read series metadata file (.json) and extract the list of slice timings"""
+def load_metadata_from_json(json_filepath):
     if not os.path.isfile(json_filepath):
         logging.error(f"JSON file not found: {json_filepath}")
         return {}
 
     with open(json_filepath, "r") as f:
         metadata = json.load(f)
-
-    if "SliceTiming" not in metadata:
-        logging.warning(f"'SliceTiming' field not found in {json_filepath}")
-        return {}
-
-    slice_timing_dict = metadata["SliceTiming"]
-    # Convert to list ordered by slice index
-    slice_timing = [slice_timing_dict[str(i)] if str(i) in slice_timing_dict else slice_timing_dict[i]
-            for i in sorted(map(int, slice_timing_dict.keys()))]
-
-    logging.info(f"Slice timings (ordered by index): {slice_timing}")
-    return slice_timing
+    logging.info(f"Metadata loaded from JSON file: {json_filepath}")
+    return metadata
 
 
 def monitor_directory(input_dir, head_radius, motion_threshold):
@@ -206,7 +195,8 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
             "seen_files": set(),
             "previous_filesize": 0,
             "begintime": None,
-            "slice_timings": None,
+            "slice_timings": [],
+            "protocol_name": None,
             "ngroups": 0,
             "sms_factor": 0,
             "motion_table": [],
@@ -262,7 +252,7 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
         logging.warning(f"File write did not stabilize after {max_checks} checks for {filepath}; proceeding anyway.")
         return True
 
-    def process_metadata_file(filepath):
+    def store_metadata_filepath(filepath):
         """Handle incoming series metadata JSON."""
         if state["metadata_filepath"] is None:
             logging.info(f"Found series metadata file : {os.path.basename(filepath)}")
@@ -270,7 +260,50 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
         else:
             logging.info(f"Skipping {filepath} because metadata already loaded.")
         state["seen_files"].add(os.path.basename(filepath))
+        return
 
+    def get_slice_timings_from_metadata(metadata_object):
+        """Extract the list of image slice acquisition times from series metadata object."""
+        if "SliceTiming" not in metadata_object:
+            logging.warning(f"'SliceTiming' field not found in series metadata!")
+            return {}
+
+        slice_timing_dict = metadata_object["SliceTiming"]
+        # Convert to list ordered by slice index
+        slice_timing = [slice_timing_dict[str(i)] if str(i) in slice_timing_dict else slice_timing_dict[i]
+                        for i in sorted(map(int, slice_timing_dict.keys()))]
+
+        logging.info(f"Slice timings (ordered by index): {slice_timing}")
+        state["slice_timings"] = slice_timing
+
+        if slice_timing is not None:
+            logging.info(f"Number of slices per volume : {len(slice_timing)}")
+            state["ngroups"] = len(np.unique(slice_timing))
+            state["sms_factor"] = len(slice_timing) / state["ngroups"]
+            logging.info(f"Number of slice groups : {state['ngroups']}")
+            logging.info(f"Number of slices per group (sms factor) : {state['sms_factor']}")
+        return slice_timing
+
+    def get_protocol_name_from_metadata(metadata_object):
+        """Extract series protocol name from series metadata object."""
+        protocol_name = metadata_object["measurementInformation"]["protocolName"]
+        protocol_name = protocol_name.replace(" ", "_") # Replace spaces with underscores
+        state["protocol_name"] = protocol_name
+        logging.info(f"Series protocol name : {state['protocol_name']}")
+
+    def get_counters_from_filename(filepath):
+        """Extract volume count string and slice group count string from transform filename."""
+        basefilename = os.path.basename(filepath)
+        match = re.search(r"_(\d{4})-(\d{4})", basefilename)
+        if not match:
+            raise ValueError(f"Filename does not match expected pattern: {basefilename}")
+
+        if state["volcount"] != int(match.group(1)):    # only update volcount if it is a new volume
+            state["volcount"] = int(match.group(1))
+            state["volume_motion_flag"] = 0
+
+        state["groupcount"] = int(match.group(2))
+        return
 
     def track_framewise_displacement(current_transform_filepath, prior_transform_filepath, head_radius, motion_threshold):
         """Maintain cumulative ledger of calculated framewise displacements between transform pairs."""
@@ -400,21 +433,20 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
 
                 # Handle series metadata file
                 if ext == ".json":
-                    process_metadata_file(new_filepath)
-                    slice_timing_array = get_slice_timings_from_metadata(state["metadata_filepath"])
-                    if slice_timing_array is not None:
-                        logging.info(f"Number of slices per volume : {len(slice_timing_array)}")
-                        state["ngroups"] = len(np.unique(slice_timing_array))
-                        state["sms_factor"] = len(slice_timing_array) / state["ngroups"]
-                        logging.info(f"Number of slice groups : {state['ngroups']}")
-                        logging.info(f"Number of slices per group (sms factor) : {state['sms_factor']}")
+                    store_metadata_filepath(new_filepath)
                     continue
 
                 # Handle pointer file
                 if ext == ".tfm":
                     state["itemcount"] += 1
-                    if state["itemcount"] % state["ngroups"] == 0:
-                        state["volcount"] += 1
+
+                    if state["itemcount"] == 1:     # first transform = ref vol identity transform
+                        # After first ref volume we can process series metadata for slice timings
+                        metadata_object = load_metadata_from_json(state["metadata_filepath"])
+                        get_slice_timings_from_metadata(metadata_object)
+                        get_protocol_name_from_metadata(metadata_object)
+
+                    get_counters_from_filename(new_filepath)    # update volume count and slice group count from filename
 
                     if not wait_for_complete_write(new_filepath):
                         state["seen_files"].add(fname)
