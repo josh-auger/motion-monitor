@@ -90,25 +90,18 @@ def plot_parameters_combined(motion_df, output_filename="", trans_thresh=0.60, r
     plt.show(block=False)
 
 
-def plot_displacements(motion_df, output_filename="", threshold=None):
+def plot_displacements(motion_df, output_filename="", threshold=None, num_moved_volumes=None):
     displacements = motion_df["Displacement(mm)"].to_numpy()
     cumulative = motion_df["Cumulative_displacement(mm)"].to_numpy()
+    volume_index = motion_df["Volume_index"]
     motion_flags = motion_df["Motion_flag"]
 
     fig, axs = plt.subplots(1, 2, figsize=(15, 6), gridspec_kw={'width_ratios': [3.5, 1]})
 
+    # Plot framewise displacements
     axs[0].plot(displacements, marker='o', alpha=0.7, label="Framewise displacement")
     if threshold is not None:
         axs[0].axhline(threshold, color='r', linestyle='--', label=f"Threshold = {threshold} mm")
-
-    text = (
-        f"Number of acquisitions: {len(displacements)}\n"
-        f"Cumulative displacement (mm): {cumulative[-1]:.3f}\n"
-        f"Motion corrupt volumes: {motion_flags.sum()}\n"
-        f"Motion-free volumes: {len(motion_flags) - motion_flags.sum()}"
-    )
-
-    axs[0].text(0.5, 0.9, text, transform=axs[0].transAxes, ha='center', va='center', bbox=dict(facecolor='white', alpha=0.7))
 
     axs[0].set_title("Framewise Displacements")
     axs[0].set_xlabel("Index")
@@ -116,8 +109,32 @@ def plot_displacements(motion_df, output_filename="", threshold=None):
     axs[0].legend(loc='upper left')
     axs[0].grid(True)
 
-    axs[1].boxplot(displacements, vert=True)
-    axs[1].set_title("Displacement Distribution")
+    # Plot motion summary and displacements boxplot
+    num_volumes = max(volume_index)
+    if num_moved_volumes is None:
+        logging.info(f"Number of motion-corrupt volumes not provided. Treating each motion flag separately.")
+        num_moved_volumes = motion_flags.sum()
+    num_motion_free_volumes = num_volumes - num_moved_volumes
+    counts = [num_motion_free_volumes, num_moved_volumes]
+
+    text = (
+        f"Number of acquisitions: {len(displacements)}\n"
+        f"Motion flags: {motion_flags.sum()}\n"
+        f"Cumulative displacement (mm): {cumulative[-1]:.3f}\n"
+        f"Number of volumes: {num_volumes}\n"
+        f"Motion-free volumes: {num_motion_free_volumes}\n"
+        f"Motion-corrupt volumes: {num_moved_volumes}"
+    )
+    axs[1].text(0.5, 0.9, text, transform=axs[1].transAxes, ha='center', va='center', multialignment='left',
+                bbox=dict(facecolor='white', alpha=0.8))
+    axs[1].bar([f"Motion-free", f"Motion-corrupt"], counts)
+    ymax = max(counts)
+    axs[1].set_ylim(0, ymax * 1.4)
+    axs[1].set_ylabel("N volumes")
+    axs[1].set_title("Volume motion summary")
+    for i, val in enumerate([num_motion_free_volumes, num_moved_volumes]):
+        axs[1].text(i, val + 0.5, str(val), ha='center', va='bottom')
+    axs[1].grid(axis='y', alpha=0.3)
 
     plt.tight_layout()
     plt.savefig(output_filename)
