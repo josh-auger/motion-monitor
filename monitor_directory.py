@@ -348,19 +348,21 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
         logging.info(f"=================================")
         return
 
-        if state["itemcount"] % (10 * state["ngroups"]) == 0:
-            motion_df = motion_table_to_dataframe(state["motion_table"])
-            if not motion_df.empty:
-                timestamp = time.strftime("%Y%m%d_%H%M%S")
-                plot_parameters_combined(
-                    motion_df,
-                    output_filename=os.path.join("/working/", f"motionTracker_parameters_{timestamp}.png"),
-                    trans_thresh=motion_threshold, )
-                plot_displacements(
-                    motion_df,
-                    output_filename=os.path.join("/working/", f"motionTracker_framewise_displacement_{timestamp}.png"),
-                    threshold=motion_threshold, )
-
+    def plot_motion_data():
+        motion_df = motion_table_to_dataframe(state["motion_table"])
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        parameters_filename = f"motionMonitor_parameters_{state['protocol_name']}_{timestamp}.png"
+        displacements_filename = f"motionMonitor_framewise_displacement_{state['protocol_name']}_{timestamp}.png"
+        if not motion_df.empty:
+            plot_parameters_combined(
+                motion_df,
+                output_filename=os.path.join("/working/", parameters_filename),
+                trans_thresh=motion_threshold, )
+            plot_displacements(
+                motion_df,
+                output_filename=os.path.join("/working/", displacements_filename),
+                threshold=motion_threshold, num_moved_volumes=state['volume_motion_count'])
+        return
 
     def export_motion_table_csv(output_dir):
         """Export motion_table to CSV if it exists and is non-empty."""
@@ -370,7 +372,7 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
             return
 
         timestamp = time.strftime("%Y%m%d_%H%M%S")
-        csv_path = os.path.join(output_dir, f"motion_table_{timestamp}.csv")
+        csv_path = os.path.join(output_dir, f"motionMonitor_data_{state['protocol_name']}_{timestamp}.csv")
         fieldnames = motion_table[0].keys()
         try:
             with open(csv_path, "w", newline="") as f:
@@ -380,6 +382,7 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
             logging.info(f"Motion table exported: {csv_path}")
         except Exception as e:
             logging.error(f"Failed to export motion table CSV: {e}")
+        return
 
     def handle_reset_trigger(filepath):
         """Handle CLOSE-trigger file."""
@@ -390,15 +393,7 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
             logging.error(f"Failed to delete reset trigger file {filepath}: {e}")
 
         # Export motion table BEFORE wiping state
-        motion_df = motion_table_to_dataframe(state["motion_table"])
-        if not motion_df.empty:
-            plot_parameters_combined(
-                motion_df,
-                output_filename=os.path.join("/working/", "motionTracker_parameters.png"),)
-            plot_displacements(
-                motion_df,
-                output_filename=os.path.join("/working/", "motionTracker_framewise_displacement.png"),)
-
+        plot_motion_data()
         export_motion_table_csv(output_dir=input_dir)
 
         # Reset all state
@@ -462,13 +457,15 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
                         state["prior_transform"] = new_filepath
                     track_framewise_displacement(new_filepath, state["prior_transform"], head_radius, motion_threshold)
 
+                    if state["itemcount"] % (20 * state["ngroups"]) == 0:   # Plot motion every N transforms (~volumes)
+                        plot_motion_data()
+
                     # Mark file as processed
                     state["seen_files"].add(fname)
                     state["prior_transform"] = new_filepath    # set current transform to be the prior seen transform
 
                     # Logging
-                    logging.info(f"Total processed files : {state['itemcount']}")
-                    logging.info(f"Total elapsed time (sec) : {time.time() - state['begintime']:.3f}")
+                    logging.info(f"Uptime (sec) : {time.time() - state['begintime']:.3f}")
                     logging.info("...")
 
 
