@@ -61,19 +61,6 @@ def reset_logging():
     logging.info(f"Log reset. Logging will be saved to : {log_filename}")
 
 
-def select_input_transform(identityTransform_filepath, counter, reference_volume_flag):
-    """Identify prior alignment transform file (.tfm) as input initialization transform in next registration call."""
-    if reference_volume_flag == 0:
-        logging.info(f"Still calibrating reference volume. Input transform for registration : {identityTransform_filepath}")
-        return identityTransform_filepath
-
-    prior_transform_filepath = f"/working/alignTransform_{counter - 1:04d}.tfm"
-    chosen_transform = prior_transform_filepath if os.path.exists(prior_transform_filepath) else identityTransform_filepath
-    # chosen_transform = identityTransform_filepath
-    logging.info(f"Input transform for registration : {chosen_transform}")
-    return chosen_transform
-
-
 def compose_transform_pair(transform1, transform2):
     """Calculate the composed transform between two given input transforms."""
     A0 = np.asarray(transform2.GetMatrix()).reshape(3, 3)
@@ -453,7 +440,7 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
                         continue
 
                     # Track new motion parameters
-                    if state["prior_transform"] is None:
+                    if state["prior_transform"] is None:    # Handle case of first transform file, no prior
                         state["prior_transform"] = new_filepath
                     track_framewise_displacement(new_filepath, state["prior_transform"], head_radius, motion_threshold)
 
