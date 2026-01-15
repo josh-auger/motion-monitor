@@ -18,13 +18,14 @@ INPUT_DIR=$1
 
 # Specify motion calculation variables (i.e. assumed head radius (mm), acceptable motion threshold (mm))
 head_radius=50
-motion_threshold=0.6
+motion_threshold=0.3
 
 # Build the Docker image, if it does not yet exist
 #docker build -t jauger/motion-monitor .
 
 docker run --rm -it \
   -u $(id -u):$(id -g) \
+  -p 8080:8080 \
   -v $INPUT_DIR:/working \
   -e HEAD_RADIUS=$head_radius \
   -e MOTION_THRESH=$motion_threshold \
