@@ -35,7 +35,7 @@ def load_motion_csv(csv_filepath):
     return df
 
 
-def plot_parameters_combined(motion_df, output_filename="", trans_thresh=0.60, radius=50):
+def plot_parameters_combined(motion_df, output_filename="", protocol_name="", trans_thresh=0.60, radius=50):
     """
     motion_df = pandas DataFrame loaded from the motion CSV file
     Plot combined motion parameters with rotations (x, y, z) on one subplot and translations (x, y, z) on another.
@@ -44,7 +44,7 @@ def plot_parameters_combined(motion_df, output_filename="", trans_thresh=0.60, r
 
     fig, axes = plt.subplots(1, 2, figsize=(18, 6))
     subplot_colors = ['b', 'g', 'r']  # x, y, z colors
-    fig.suptitle(f"Motion Parameters", y=0.98)
+    fig.suptitle(f"Motion Parameters: {protocol_name}", y=0.98)
 
     # Extract parameter arrays from motion dataframe
     rotations_rad = motion_df[["X_rotation(rad)", "Y_rotation(rad)", "Z_rotation(rad)"]].to_numpy()
@@ -85,12 +85,12 @@ def plot_parameters_combined(motion_df, output_filename="", trans_thresh=0.60, r
 
     plt.tight_layout()
     plt.savefig(output_filename)
-    logging.info(f"Combined parameters plot saved as : {output_filename}")
+    logging.info(f"Parameters plot saved as : {output_filename}")
     plt.ion()
     plt.show(block=False)
 
 
-def plot_displacements(motion_df, output_filename="", threshold=None, num_moved_volumes=None):
+def plot_displacements(motion_df, output_filename="", protocol_name="", threshold=None, num_expected_volumes=None, num_moved_volumes=None):
     displacements = motion_df["Displacement(mm)"].to_numpy()
     cumulative = motion_df["Cumulative_displacement(mm)"].to_numpy()
     volume_index = motion_df["Volume_index"]
@@ -103,7 +103,7 @@ def plot_displacements(motion_df, output_filename="", threshold=None, num_moved_
     if threshold is not None:
         axs[0].axhline(threshold, color='r', linestyle='--', label=f"Threshold = {threshold} mm")
 
-    axs[0].set_title("Framewise Displacements")
+    axs[0].set_title(f"Framewise Displacements: {protocol_name}")
     axs[0].set_xlabel("Index")
     axs[0].set_ylabel("Displacement (mm)")
     axs[0].legend(loc='upper left')
@@ -116,6 +116,9 @@ def plot_displacements(motion_df, output_filename="", threshold=None, num_moved_
         num_moved_volumes = motion_flags.sum()
     num_motion_free_volumes = num_volumes - num_moved_volumes
     counts = [num_motion_free_volumes, num_moved_volumes]
+    if num_expected_volumes is None:
+        logging.info(f"Numer of expected volumes (sequence repetitions) not provided. Using current volume count.")
+        num_expected_volumes = num_volumes
 
     text = (
         f"Number of acquisitions: {len(displacements)}\n"
@@ -127,8 +130,8 @@ def plot_displacements(motion_df, output_filename="", threshold=None, num_moved_
     )
     axs[1].text(0.5, 0.9, text, transform=axs[1].transAxes, ha='center', va='center', multialignment='left',
                 bbox=dict(facecolor='white', alpha=0.8))
-    axs[1].bar([f"Motion-free", f"Motion-corrupt"], counts)
-    ymax = max(counts)
+    axs[1].bar([f"Motion-free", f"Motion-corrupt"], counts, color=["tab:blue", "tab:orange"])
+    ymax = num_expected_volumes
     axs[1].set_ylim(0, ymax * 1.4)
     axs[1].set_ylabel("N volumes")
     axs[1].set_title("Volume motion summary")
