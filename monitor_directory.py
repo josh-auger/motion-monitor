@@ -11,22 +11,23 @@
 
 import os
 import re
+import cv2
 import sys
 import csv
 import glob
 import time
+import socket
 import logging
 import argparse
-import subprocess
 import SimpleITK as sitk
 import numpy as np
 import pandas as pd
 from datetime import datetime
 import json
+import mjpeg_server_module
 from generate_motion_plots import (
     plot_parameters_combined,
     plot_displacements,
-    plot_cumulative_displacement,
 )
 
 
@@ -154,6 +155,7 @@ def convert_versor_to_euler(transform):
 
 
 def load_metadata_from_json(json_filepath):
+    """Load metadata object from json series metadata file."""
     if not os.path.isfile(json_filepath):
         logging.error(f"JSON file not found: {json_filepath}")
         return {}
@@ -162,6 +164,27 @@ def load_metadata_from_json(json_filepath):
         metadata = json.load(f)
     logging.info(f"Metadata loaded from JSON file: {json_filepath}")
     return metadata
+
+
+def get_host_ip():
+    """Get host IP address."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # Connect to an external host — no data is sent, just used to determine the local IP
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = "127.0.0.1"
+    finally:
+        s.close()
+    return ip
+
+
+def push_img_to_stream(img, width, height, jpeg_quality=80):
+    img = cv2.resize(img, (width, height))
+    success, jpeg = cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), jpeg_quality])
+    if success:
+        mjpeg_server_module.update_frame(jpeg.tobytes())
 
 
 def monitor_directory(input_dir, head_radius, motion_threshold):
@@ -189,13 +212,15 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
             "begintime": None,
             "slice_timings": [],
             "protocol_name": None,
+            "total_repetitions": 0,
             "ngroups": 0,
             "sms_factor": 0,
             "motion_table": [],
             "cumulative_displacement": 0.0,
             "motion_flag_count": 0,
             "volume_motion_flag": 0,
-            "volume_motion_count": 0
+            "volume_motion_count": 0,
+            "last_plotted_volcount": 0
         }
     state = reset_variables()
 
@@ -279,11 +304,17 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
         return slice_timing
 
     def get_protocol_name_from_metadata(metadata_object):
-        """Extract series protocol name from series metadata object."""
+        """Extract sequence protocol name from series metadata object."""
         protocol_name = metadata_object["measurementInformation"]["protocolName"]
         protocol_name = protocol_name.replace(" ", "_") # Replace spaces with underscores
         state["protocol_name"] = protocol_name
         logging.info(f"Series protocol name : {state['protocol_name']}")
+
+    def get_repetitions_from_metadata(metadata_object):
+        """Extract sequence repetitions (total expected image volumes) from series metadata object."""
+        total_repetitions = metadata_object["encoding"][0]["encodingLimits"]["repetition"]["maximum"]
+        logging.info(f"Total sequence repetitions : {total_repetitions}")
+        state["total_repetitions"] = total_repetitions
 
     def get_counters_from_filename(filepath):
         """Extract volume count string and slice group count string from transform filename."""
@@ -335,33 +366,41 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
         def format_params(params, precision=4):
             return "(" + ", ".join(f"{p:.{precision}g}" for p in params) + ")"
 
+        logging.info(f"Volume (group) : {state['volcount']} ({state['groupcount']})")
         logging.info(f"Prior Euler parameters ({state['itemcount'] - 1:04d}) : {format_params(prior_params, 4)}")
         logging.info(f"Current Euler parameters ({state['itemcount']:04d}) : {format_params(current_params, 4)}")
         logging.info(f"Framewise displacement (mm) : {framewise_displacement:04f}")
-        logging.info(f"=================================")
-        logging.info(f"===== MOTION SUMMARY : {state['itemcount']:04d} =====")
-        logging.info(f"\tCumulative displacement (mm) : {state['cumulative_displacement']:04f}")
-        logging.info(f"\tCumulative motion flags : {state['motion_flag_count']}")
-        logging.info(f"\tCurrent volume count : {state['volcount']} (slice group {state['groupcount']})")
-        logging.info(f"\tMotion-free volumes : {(state['volcount'] - state['volume_motion_count'])}")
-        logging.info(f"\tVolumes with motion : {state['volume_motion_count']}")
-        logging.info(f"=================================")
+        # logging.info(f"=================================")
+        # logging.info(f"===== MOTION SUMMARY : {state['itemcount']:04d} =====")
+        # logging.info(f"\tCumulative displacement (mm) : {state['cumulative_displacement']:04f}")
+        # logging.info(f"\tCumulative motion flags : {state['motion_flag_count']}")
+        # logging.info(f"\tCurrent volume count : {state['volcount']} (slice group {state['groupcount']})")
+        # logging.info(f"\tMotion-free volumes : {(state['volcount'] - state['volume_motion_count'])}")
+        # logging.info(f"\tVolumes with motion : {state['volume_motion_count']}")
+        # logging.info(f"=================================")
         return
 
     def plot_motion_data():
         motion_df = motion_table_to_dataframe(state["motion_table"])
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        parameters_filename = f"motionMonitor_parameters_{state['protocol_name']}_{timestamp}.png"
-        displacements_filename = f"motionMonitor_framewise_displacement_{state['protocol_name']}_{timestamp}.png"
+        # timestamp = time.strftime("%Y%m%d_%H%M%S")
+        parameters_filepath = os.path.join("/working/", f"motionMonitor_parameters_{state['protocol_name']}.jpg")
+        displacements_filepath = os.path.join("/working/", f"motionMonitor_framewise_displacement_{state['protocol_name']}.jpg")
         if not motion_df.empty:
             plot_parameters_combined(
                 motion_df,
-                output_filename=os.path.join("/working/", parameters_filename),
+                output_filename=parameters_filepath,
+                protocol_name=state['protocol_name'],
                 trans_thresh=motion_threshold, )
             plot_displacements(
                 motion_df,
-                output_filename=os.path.join("/working/", displacements_filename),
-                threshold=motion_threshold, num_moved_volumes=state['volume_motion_count'])
+                output_filename=displacements_filepath,
+                protocol_name=state['protocol_name'],
+                threshold=motion_threshold,
+                num_expected_volumes=state['total_repetitions'],
+                num_moved_volumes=state['volume_motion_count'])
+
+        img = cv2.imread(displacements_filepath)
+        push_img_to_stream(img, 1500, 600)
         return
 
     def export_motion_table_csv(output_dir):
@@ -379,7 +418,7 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
                 writer.writerows(motion_table)
-            logging.info(f"Motion table exported: {csv_path}")
+            logging.info(f"Motion table saved as : {csv_path}")
         except Exception as e:
             logging.error(f"Failed to export motion table CSV: {e}")
         return
@@ -405,16 +444,24 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
         return
 
     # =====================================================================
+    # ESTABLISH SERVER
+    # =====================================================================
+    # http_url = "http://0.0.0.0:8080/stream.mjpg"
+    PORT = 8080
+    mjpeg_server_module.start_server(PORT)
+    host_ip = get_host_ip()
+    logging.info(f"MJPEG stream available at: http://{host_ip}:{PORT}/stream.mjpg")
+    # If running on crlreconmri SSH server, use crlreconmri IP address: http://10.27.192.112:8080/stream.mjpg
+
+    # =====================================================================
     # MAIN MONITOR LOOP
     # =====================================================================
     while True:
         new_files = list_new_files()
         if not new_files:
             time.sleep(0.005)
-            continue
-
-        if new_files:
-            # Start timer of new session
+        else:
+            # Start timer for new session
             if state["begintime"] is None:
                 reset_logging()
                 state["begintime"] = time.time()
@@ -426,45 +473,43 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
                 new_filepath = os.path.join(input_dir, fname)
                 ext = os.path.splitext(fname)[1]
 
-                # Handle CLOSE trigger file(s)
+                # Handle CLOSE trigger
                 if ext == ".closeM":
                     handle_reset_trigger(new_filepath)
                     continue
 
-                # Handle series metadata file
+                # Handle metadata
                 if ext == ".json":
                     store_metadata_filepath(new_filepath)
                     continue
 
-                # Handle pointer file
+                # Handle transform files
                 if ext == ".tfm":
                     state["itemcount"] += 1
-
-                    if state["itemcount"] == 1:     # first transform = ref vol identity transform
-                        # After first ref volume we can process series metadata for slice timings
+                    if state["itemcount"] == 1:
                         metadata_object = load_metadata_from_json(state["metadata_filepath"])
                         get_slice_timings_from_metadata(metadata_object)
                         get_protocol_name_from_metadata(metadata_object)
+                        get_repetitions_from_metadata(metadata_object)
 
-                    get_counters_from_filename(new_filepath)    # update volume count and slice group count from filename
+                    get_counters_from_filename(new_filepath)
 
                     if not wait_for_complete_write(new_filepath):
                         state["seen_files"].add(fname)
                         continue
 
-                    # Track new motion parameters
-                    if state["prior_transform"] is None:    # Handle case of first transform file, no prior
+                    if state["prior_transform"] is None:
                         state["prior_transform"] = new_filepath
+
                     track_framewise_displacement(new_filepath, state["prior_transform"], head_radius, motion_threshold)
 
-                    if state["itemcount"] % (20 * state["ngroups"]) == 0:   # Plot motion every N transforms (~volumes)
+                    if (state["volcount"] // 10) > (state["last_plotted_volcount"] // 10):
                         plot_motion_data()
+                        state["last_plotted_volcount"] = state["volcount"]
 
-                    # Mark file as processed
                     state["seen_files"].add(fname)
-                    state["prior_transform"] = new_filepath    # set current transform to be the prior seen transform
+                    state["prior_transform"] = new_filepath
 
-                    # Logging
                     logging.info(f"Uptime (sec) : {time.time() - state['begintime']:.3f}")
                     logging.info("...")
 
