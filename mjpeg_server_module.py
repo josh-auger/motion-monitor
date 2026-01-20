@@ -9,7 +9,7 @@ BOUNDARY = "frameboundary"
 latest_jpeg = None
 lock = threading.Lock()
 
-def generate_dummy_frame(width=1500, height=600, text="Stream connected. Awaiting frames..."):
+def generate_dummy_frame(width=1600, height=900, text="Stream connected. Awaiting frames..."):
     """
     Create a white background JPEG frame with centered black text.
     """
