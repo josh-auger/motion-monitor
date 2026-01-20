@@ -28,6 +28,7 @@ import mjpeg_server_module
 from generate_motion_plots import (
     plot_parameters_combined,
     plot_displacements,
+    plot_motion_dashboard
 )
 
 
@@ -385,12 +386,12 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
         # timestamp = time.strftime("%Y%m%d_%H%M%S")
         parameters_filepath = os.path.join("/working/", f"motionMonitor_parameters_{state['protocol_name']}.jpg")
         displacements_filepath = os.path.join("/working/", f"motionMonitor_framewise_displacement_{state['protocol_name']}.jpg")
+        dashboard_filepath = os.path.join("/working/", f"motionMonitor_dashboard_{state['protocol_name']}.jpg")
         if not motion_df.empty:
             plot_parameters_combined(
                 motion_df,
                 output_filename=parameters_filepath,
-                protocol_name=state['protocol_name'],
-                trans_thresh=motion_threshold, )
+                protocol_name=state['protocol_name'])
             plot_displacements(
                 motion_df,
                 output_filename=displacements_filepath,
@@ -398,9 +399,18 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
                 threshold=motion_threshold,
                 num_expected_volumes=state['total_repetitions'],
                 num_moved_volumes=state['volume_motion_count'])
+            plot_motion_dashboard(
+                motion_df,
+                output_filename=dashboard_filepath,
+                protocol_name=state['protocol_name'],
+                threshold=motion_threshold,
+                num_expected_volumes=state['total_repetitions'],
+                num_moved_volumes=state['volume_motion_count'],
+                host_ip=host_ip,
+                host_port=PORT)
 
-        img = cv2.imread(displacements_filepath)
-        push_img_to_stream(img, 1500, 600)
+        img = cv2.imread(dashboard_filepath)
+        push_img_to_stream(img, 1600, 900)
         return
 
     def export_motion_table_csv(output_dir):
@@ -450,8 +460,8 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
     PORT = 8080
     mjpeg_server_module.start_server(PORT)
     host_ip = get_host_ip()
-    logging.info(f"MJPEG stream available at: http://{host_ip}:{PORT}/stream.mjpg")
-    # If running on crlreconmri SSH server, use crlreconmri IP address: http://10.27.192.112:8080/stream.mjpg
+    logging.info(f"MJPEG stream available at: http://{host_ip}:{PORT}/stream.mjpg\n")
+    logging.info(f"NOTE: IF running on crlreconmri SSH server, then use crlreconmri IP address: http://10.27.192.112:8080/stream.mjpg")
 
     # =====================================================================
     # MAIN MONITOR LOOP
@@ -485,14 +495,13 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
 
                 # Handle transform files
                 if ext == ".tfm":
+                    get_counters_from_filename(new_filepath)
                     state["itemcount"] += 1
                     if state["itemcount"] == 1:
                         metadata_object = load_metadata_from_json(state["metadata_filepath"])
                         get_slice_timings_from_metadata(metadata_object)
                         get_protocol_name_from_metadata(metadata_object)
                         get_repetitions_from_metadata(metadata_object)
-
-                    get_counters_from_filename(new_filepath)
 
                     if not wait_for_complete_write(new_filepath):
                         state["seen_files"].add(fname)
@@ -502,7 +511,6 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
                         state["prior_transform"] = new_filepath
 
                     track_framewise_displacement(new_filepath, state["prior_transform"], head_radius, motion_threshold)
-
                     if (state["volcount"] // 10) > (state["last_plotted_volcount"] // 10):
                         plot_motion_data()
                         state["last_plotted_volcount"] = state["volcount"]
