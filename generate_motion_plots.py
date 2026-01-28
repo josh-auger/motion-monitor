@@ -81,7 +81,7 @@ def plot_parameters_combined(motion_df, output_filename="", protocol_name=""):
     plt.savefig(output_filename)
     logging.info(f"Parameters plot saved as : {output_filename}")
     plt.ion()
-    plt.show(block=False)
+    plt.close(fig)
 
 
 def plot_displacements(motion_df, output_filename="", protocol_name="", threshold=None, num_expected_volumes=None, num_moved_volumes=None):
@@ -136,7 +136,7 @@ def plot_displacements(motion_df, output_filename="", protocol_name="", threshol
     plt.tight_layout()
     plt.savefig(output_filename)
     logging.info(f"Displacements plot saved as : {output_filename}")
-    plt.show(block=True)
+    plt.close(fig)
 
 
 def plot_cumulative_displacement(motion_df, output_filename="", threshold=None):
@@ -158,7 +158,7 @@ def plot_cumulative_displacement(motion_df, output_filename="", threshold=None):
     plt.tight_layout()
     plt.savefig(output_filename)
     logging.info(f"Cumulative displacement plot saved as : {output_filename}")
-    plt.show(block=True)
+    plt.close(fig)
 
 
 def plot_motion_dashboard(motion_df, output_filename="", protocol_name="", threshold=None, num_expected_volumes=None,
