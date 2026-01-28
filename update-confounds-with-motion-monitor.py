@@ -88,6 +88,33 @@ def append_motion_flag_matrix(confounds_df, motion_flag_matrix):
     return confounds_df_extended
 
 
+def resolve_column_name(df, canonical_name, aliases, required=True):
+    """
+    Resolve a column name from a list of known aliases. Returns the actual column name found in df.
+    """
+    # Normalize function
+    def normalize(name):
+        return name.lower().replace(" ", "").replace("_", "")
+    normalized_columns = {normalize(col): col for col in df.columns}
+
+    # Check canonical name first
+    if normalize(canonical_name) in normalized_columns:
+        return normalized_columns[normalize(canonical_name)]
+
+    # Check aliases
+    for alias in aliases:
+        if normalize(alias) in normalized_columns:
+            return normalized_columns[normalize(alias)]
+
+    if required:
+        raise KeyError(
+            f"Required column '{canonical_name}' not found. "
+            f"Tried aliases: {aliases}. "
+            f"Available columns: {list(df.columns)}"
+        )
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description='Update a confounds file with motion-monitor results.')
     parser.add_argument('--confounds', type=str, help='Full filepath to the confounds file (*.tsv).')
@@ -99,6 +126,20 @@ def main():
     motion_monitor_filepath = args.motionmonitor
     confounds_df = pd.read_csv(confounds_filepath, sep='\t')
     motion_df = pd.read_csv(motion_monitor_filepath)
+
+    # Step 1.5: resolve column name variations
+    volume_col = resolve_column_name(
+        motion_df,
+        canonical_name="Volume_number",
+        aliases=["Volume_index", "volume_index", "volumeNumber"])
+
+    motion_flag_col = resolve_column_name(
+        motion_df,
+        canonical_name="Motion_flag",
+        aliases=["motion_flag", "MotionFlag", "motionFlag"])
+
+    # Rename to canonical names used everywhere else in the script
+    motion_df = motion_df.rename(columns={volume_col: "Volume_number", motion_flag_col: "Motion_flag"})
 
     # Step 2: condense slicewise motion flags to volume motion flags
     condensed_motion_df = condense_motion_flags(motion_df)
