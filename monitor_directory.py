@@ -168,7 +168,11 @@ def load_metadata_from_json(json_filepath):
 
 
 def get_host_ip():
-    """Get host IP address."""
+    """
+    Get host IP address.
+    WARNING: This will return the Docker container's internal IP on the Docker bridge network.
+    On Linux: run 'ip a' command and look for the ethernet IP address listed.
+    """
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # Connect to an external host — no data is sent, just used to determine the local IP
@@ -221,7 +225,9 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
             "motion_flag_count": 0,
             "volume_motion_flag": 0,
             "volume_motion_count": 0,
-            "last_plotted_volcount": 0
+            "last_plotted_volcount": 0,
+            "idle_since": None,
+            "final_plot_done": False
         }
     state = reset_variables()
 
@@ -460,8 +466,8 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
     PORT = 8080
     mjpeg_server_module.start_server(PORT)
     host_ip = get_host_ip()
-    logging.info(f"MJPEG stream available at: http://{host_ip}:{PORT}/stream.mjpg\n")
-    logging.info(f"NOTE: IF running on crlreconmri SSH server, then use crlreconmri IP address: http://10.27.192.112:8080/stream.mjpg")
+    logging.info(f"Motion Monitor stream available on host at: http://{host_ip}:{PORT}/stream.mjpg")
+    logging.info(f"\tIF running on crlreconmri server, use crlreconmri host IP address: http://10.27.192.112:8080/stream.mjpg")
 
     # =====================================================================
     # MAIN MONITOR LOOP
@@ -470,6 +476,22 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
         new_files = list_new_files()
         if not new_files:
             time.sleep(0.005)
+            if state["begintime"] is None:
+                continue    # no monitoring started, wait
+
+            if state["idle_since"] is None:
+                state["idle_since"] = time.time()   # start idle timer
+                logging.info("No new files found. Idling...")
+                continue
+
+            idle_time = time.time() - state["idle_since"]
+
+            if idle_time >= 5 and not state["final_plot_done"]:
+                logging.info(f"Idle for {idle_time:.3f} secs. Generating final motion plots.")
+                plot_motion_data()
+                state["final_plot_done"] = True
+                logging.info(f"Idling...")
+
         else:
             # Start timer for new session
             if state["begintime"] is None:
@@ -511,7 +533,7 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
                         state["prior_transform"] = new_filepath
 
                     track_framewise_displacement(new_filepath, state["prior_transform"], head_radius, motion_threshold)
-                    if (state["volcount"] // 10) > (state["last_plotted_volcount"] // 10):
+                    if (state["volcount"] // 5) > (state["last_plotted_volcount"] // 5):
                         plot_motion_data()
                         state["last_plotted_volcount"] = state["volcount"]
 
