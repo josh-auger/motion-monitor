@@ -489,7 +489,8 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
             if idle_time >= 5 and not state["final_plot_done"]:
                 logging.info(f"Idle for {idle_time:.3f} secs. Generating final motion plots.")
                 plot_motion_data()
-                state["final_plot_done"] = True
+                export_motion_table_csv(output_dir=input_dir)
+                state["final_plot_done"] = True     # only run final plotting once after idling
                 logging.info(f"Idling...")
 
         else:
