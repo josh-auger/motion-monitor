@@ -614,7 +614,7 @@ if __name__ == "__main__":
         threshold_value = float(sys.argv[3])    # threshold of acceptable motion (mm)
     except (IndexError, ValueError):
         print("Threshold value not specified. Using default value.")
-        threshold_value = 0.6
+        threshold_value = 0.3
 
     logging.info("")
     logging.info(f"User-specified values:")
