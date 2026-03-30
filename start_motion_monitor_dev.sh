@@ -20,9 +20,6 @@ INPUT_DIR=$1
 head_radius=50
 motion_threshold=0.3
 
-# Build the Docker image, if it does not yet exist
-#docker build -t jauger/motion-monitor .
-
 docker run --rm -it \
   -u $(id -u):$(id -g) \
   -p 8080:8080 \
