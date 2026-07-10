@@ -33,8 +33,8 @@ from generate_motion_plots import (
 
 
 def setup_logging():
-    """Configure logging to save logs with a timestamped filename in /working/."""
-    log_filename = os.path.join("/working/", f"log_motion_monitor_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+    """Configure logging to save logs with a timestamped filename in /data/."""
+    log_filename = os.path.join("/data/", f"log_motion_monitor_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(message)s',
@@ -48,7 +48,7 @@ def setup_logging():
 
 def reset_logging():
     """Reset logging configuration to save logs to a new logfile with a fresh timestamp."""
-    log_filename = os.path.join("/working/", f"log_motion_monitor_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+    log_filename = os.path.join("/data/", f"log_motion_monitor_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
     # Remove all existing handlers
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
@@ -390,9 +390,9 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
     def plot_motion_data():
         motion_df = motion_table_to_dataframe(state["motion_table"])
         # timestamp = time.strftime("%Y%m%d_%H%M%S")
-        parameters_filepath = os.path.join("/working/", f"motionMonitor_parameters_{state['protocol_name']}.jpg")
-        displacements_filepath = os.path.join("/working/", f"motionMonitor_framewise_displacement_{state['protocol_name']}.jpg")
-        dashboard_filepath = os.path.join("/working/", f"motionMonitor_dashboard_{state['protocol_name']}.jpg")
+        parameters_filepath = os.path.join("/data/", f"motionMonitor_parameters_{state['protocol_name']}.jpg")
+        displacements_filepath = os.path.join("/data/", f"motionMonitor_framewise_displacement_{state['protocol_name']}.jpg")
+        dashboard_filepath = os.path.join("/data/", f"motionMonitor_dashboard_{state['protocol_name']}.jpg")
         if not motion_df.empty:
             plot_parameters_combined(
                 motion_df,
@@ -546,10 +546,15 @@ def monitor_directory(input_dir, head_radius, motion_threshold):
 
 
 def main():
-    parser = argparse.ArgumentParser(add_help=False)  # Disable default help
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("input_directory", nargs="?", help="Path to the directory containing image files.")
-    parser.add_argument("--radius", type=float, default=50, help="Motion threshold (mm)")
-    parser.add_argument("--threshold", type=float, default=0.6, help="Motion threshold (mm)")
+
+    # Pull defaults from environment variables
+    default_radius = float(os.environ.get("HEAD_RADIUS", "50"))
+    default_threshold = float(os.environ.get("MOTION_THRESH", "0.3"))
+
+    parser.add_argument("--radius", type=float, default=default_radius, help="Head radius (mm) for displacement calculation")
+    parser.add_argument("--threshold", type=float, default=default_threshold, help="Framewise displacement threshold (mm) for motion")
     args = parser.parse_args()
 
     monitor_directory(args.input_directory, args.radius, args.threshold)
