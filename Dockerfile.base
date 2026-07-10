@@ -1,0 +1,80 @@
+FROM python:3.10.2-slim
+
+# =========================
+# Locale
+# =========================
+RUN apt-get update && apt-get install -y locales locales-all && rm -rf /var/lib/apt/lists/*
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
+
+ENV MPLCONFIGDIR=/tmp/matplotlibdir
+
+# =========================
+# Shared system dependencies
+# =========================
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    curl \
+#    vim \
+#    nano \
+    unzip \
+    zip \
+    perl \
+    bison \
+    flex \
+    gperf \
+    && rm -rf /var/lib/apt/lists/*
+
+# =========================
+# Runtime + scientific libs
+# =========================
+RUN apt-get update && apt-get install -y \
+    libgl1 \
+    libglib2.0-0 \
+    libhdf5-103 \
+    libxml2 \
+    libxslt1.1 \
+    libjpeg62-turbo \
+    libpng16-16 \
+    libtiff5 \
+    libsqlite3-0 \
+    zlib1g \
+    liblzma5 \
+    libgomp1 \
+    libfreetype6 \
+    libfontconfig1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# =========================
+# Build / C++ dependency libs (shared across containers)
+# =========================
+RUN apt-get update && apt-get install -y \
+    libhdf5-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    libboost-all-dev \
+    libfftw3-dev \
+    libpugixml-dev \
+    libatlas-base-dev \
+    libeigen3-dev \
+    libsuitesparse-dev \
+    libgoogle-glog-dev \
+    libgflags-dev \
+    libproj-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# =========================
+# Python dependencies (merged)
+# =========================
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r /tmp/requirements.txt
+
+# =========================
+# default working dir
+# =========================
+WORKDIR /app

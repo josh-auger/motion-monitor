@@ -12,7 +12,7 @@
 # sh start_motion_monitor.sh Input_DIR transform_filename.txt
 
 # Specify local parent directory and grab input file
-INPUT_DIR="/home/jauger/Radiology_Research/Scan_data/20250131_MRN6077271_Atlas_scan/6077271_20250131_rerunRetroSVR_20260107/fromNickBruteForce_retroSVR_20250131/func-bold_task-rest480_retroSVR_singlePairUpdates_alignTransforms/"
+INPUT_DIR="/home/jauger/Radiology_Research/Scan_data/20260123_MRN4162674_Atlas_patient_scan/fromResearchSynapse_20260123/4162674-5-scan001_Nick_brute_force_motion_char_retroSVR/motion_output/"
 # INPUT_DIR=$1
 INPUT_FILE=$1
 # INPUT_FILE=$2

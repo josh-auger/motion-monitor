@@ -14,7 +14,7 @@
 # Specify local parent directory and grab input file
 INPUT_DIR=$1
 #INPUT_DIR="/home_local/ch253208/python-fire-server-jauger/received_data/"     # data directory on crlreconmri
-#INPUT_DIR="/home/jauger/GitHubRepos/python-fire-server-jauger/received_data/savedData_20251230T153705_func-bold_task-adt_run-01_slimmon/"
+#INPUT_DIR="/home/jauger/GitHubRepos/python-fire-server-jauger/received_data/"
 
 # Specify motion calculation variables (i.e. assumed head radius (mm), acceptable motion threshold (mm))
 head_radius=50
@@ -23,7 +23,7 @@ motion_threshold=0.3
 docker run --rm -it \
   -u $(id -u):$(id -g) \
   -p 8080:8080 \
-  -v $INPUT_DIR:/working \
+  -v $INPUT_DIR:/data \
   -e HEAD_RADIUS=$head_radius \
   -e MOTION_THRESH=$motion_threshold \
   jauger/motion-monitor:dev \
