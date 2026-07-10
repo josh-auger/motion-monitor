@@ -1,1 +1,15 @@
-/*.tar
+# Tarballs
+*.tar
+*.tar.gz
+
+# Python cache / temp files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# OS / editor junk
+.DS_Store
+*.swp
+*.swo
+.idea/

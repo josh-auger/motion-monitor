@@ -27,6 +27,7 @@ __pycache__/
 .DS_Store
 *.swp
 *.swo
+.idea/
 
 # Data directories
 
